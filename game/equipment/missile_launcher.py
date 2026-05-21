@@ -49,12 +49,18 @@ class MissileLauncher(Equipment):
         nav = MissileNavigation(m, self.owner, radar)
         nav.set_target(target, self.missile_speed)
         m.set_nav(nav)
-        m.heading = (target.pos - self.owner.pos).normalized() if hasattr(target.pos, '__sub__') else m.heading
+        from game.coords import direction_to
+        m.heading = direction_to(self.owner.pos, target.pos)
         self.stock -= 1
         self._active.append(m)
         if self._on_report:
             self._on_report(f"ミサイル発射 残弾:{self.stock}/{self.capacity}")
         return m
+
+    @property
+    def missile_range(self) -> float:
+        """ミサイルの最大射程 (grid)。"""
+        return self.missile_speed * self.missile_flight_time
 
     def restock(self) -> None:
         self.stock = self.capacity
