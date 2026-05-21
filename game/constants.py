@@ -1,0 +1,127 @@
+"""仕様書に定義された全数値定数。"""
+
+# --- 艦種パラメータ ---
+
+HEAVY_CRUISER = dict(
+    max_speed=5,          # grid/sec
+    size=0.3,             # grid
+    durability=2000,      # gj
+    missile_capacity=100,
+    capacitor_max=2000,   # gj
+    generator_rate_max=20,  # gj/sec
+    fuel_max=10000,       # gj
+    radar_range=1000,     # grid
+    supply_provider=True,
+)
+
+DESTROYER = dict(
+    max_speed=10,
+    size=0.1,
+    durability=500,
+    missile_capacity=20,
+    capacitor_max=500,
+    generator_rate_max=10,
+    fuel_max=1000,
+    radar_range=750,
+    supply_provider=False,
+)
+
+SPECIAL_SHIP = dict(
+    max_speed=20,
+    size=0.15,
+    durability=2000,
+    missile_capacity=50,
+    capacitor_max=2000,
+    generator_rate_max=30,
+    fuel_max=5000,
+    radar_range=1500,
+    supply_provider=False,
+    has_jump_drive=True,
+)
+
+# --- 兵装（標準艦） ---
+
+MISSILE_STANDARD = dict(
+    power=500,        # gj
+    speed=100,        # grid/sec
+    flight_time=10,   # sec
+)
+
+BEAM_STANDARD = dict(
+    power=250,        # gj
+    speed=200,        # grid/sec
+    range=500,        # grid
+)
+
+SHIELD_STANDARD = dict(
+    max_defense_energy=500,    # gj
+    recovery_rate=1.0,         # %/sec
+    recovery_energy_cost=5.0,  # gj/%
+    deploy_energy_cost=2.0,    # gj/%/sec
+)
+
+# --- 兵装（特務艦） ---
+
+MISSILE_SPECIAL = dict(
+    power=500,
+    speed=150,
+    flight_time=15,
+)
+
+BEAM_SPECIAL = dict(
+    power=250,
+    speed=200,
+    range=1000,
+)
+
+SHIELD_SPECIAL = dict(
+    max_defense_energy=750,
+    recovery_rate=2.0,
+    recovery_energy_cost=5.0,
+    deploy_energy_cost=2.0,
+)
+
+# --- ビームダメージ範囲 ---
+BEAM_FULL_DAMAGE_RANGE = 10    # grid  先端から10 grid以内: 100%
+BEAM_PARTIAL_DAMAGE_RANGE = 20  # grid  10〜20 grid: 25%
+BEAM_PARTIAL_DAMAGE_RATE = 0.25
+
+# --- ビーム発射コスト ---
+BEAM_ENERGY_COST_RATE = 1.25  # ビーム威力の125%
+
+# --- 移動コスト ---
+MOVE_ENERGY_PER_SPEED = 1.0  # gj per grid/sec の速度変化
+
+# --- 補給 ---
+SUPPLY_RANGE = 150            # grid
+SUPPLY_TIME = 60              # sec
+SUPPLY_MIN_STOCK_RATE = 0.20  # 在庫20%以下になる補給はしない
+
+# --- ジャンプドライブ ---
+JUMP_ENERGY_RATE = 0.50       # キャパシタ容量の50%を消費
+JUMP_LANDING_RADIUS = 150     # grid  目標基地からの着地半径
+
+# --- シールド自動展開（ガンナー） ---
+SHIELD_AUTO_BEAM_RATE = 50    # %  ビーム検知時
+SHIELD_AUTO_MISSILE_RATE = 100  # %  ミサイル検知時
+
+# --- BOT AI ---
+BOT_RETREAT_DAMAGE_RATE = 0.80  # 蓄積ダメージが耐久性の80%以上で退避
+BOT_HOME_ORBIT_RADIUS = 150     # grid
+
+# --- 初期配置 ---
+STAR_COUNT_MIN = 20
+STAR_COUNT_MAX = 30
+KLINGON_FLEET_COUNT = 3
+KLINGON_FLEET_SIZE = 10       # 駆逐艦数 (旗艦1隻 + 駆逐艦10隻)
+FEDERATION_BASE_COUNT = 5
+FEDERATION_FLEET_SIZE = 10    # 基地ごとの駆逐艦数
+FLEET_ORBIT_RADIUS = 150      # grid  旗艦・基地からの初期配置半径
+
+# --- 恒星 ---
+STAR_SIZE = 5  # grid
+STAR_DURABILITY = float("inf")
+
+# --- 基地 ---
+BASE_DURABILITY = 20000  # gj
+BASE_SIZE = 1            # grid
