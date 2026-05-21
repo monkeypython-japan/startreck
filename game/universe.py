@@ -6,8 +6,9 @@ from game.objects.thing import Thing
 class Universe:
     def __init__(self) -> None:
         self.objects: list[Thing] = []
-        self.time: int = 0          # ゲーム開始からの秒数
+        self.time: int = 0
         self._elapsed: float = 0.0
+        self._initialized: bool = False  # initialize() が呼ばれた後に True
 
     def add(self, obj: Thing) -> None:
         self.objects.append(obj)
@@ -32,8 +33,7 @@ class Universe:
     def _check_weapon_collisions(self) -> None:
         from game.objects.missile import Missile
         from game.objects.beam import Beam
-        non_weapons = [o for o in self.objects
-                       if not isinstance(o, (Missile, Beam))]
+        non_weapons = [o for o in self.objects if not isinstance(o, (Missile, Beam))]
         for obj in list(self.objects):
             if isinstance(obj, Missile):
                 obj.check_detonation(non_weapons)
@@ -41,18 +41,15 @@ class Universe:
                 obj.check_damage(non_weapons)
 
     def _tick(self) -> None:
-        """1秒ごとのゲームロジック: AI意思決定・勝敗判定。"""
         from game.objects.vessel import Vessel
         for obj in list(self.objects):
-            if (isinstance(obj, Vessel)
-                    and obj.bridge
-                    and obj.bridge.commander):
+            if isinstance(obj, Vessel) and obj.bridge and obj.bridge.commander:
                 obj.bridge.commander.tick()
 
     @property
     def victory(self) -> str | None:
-        """勝者を返す。ゲーム継続中は None。未初期化は None。"""
-        if not self.objects:
+        """勝者を返す。未初期化またはゲーム継続中は None。"""
+        if not self._initialized:
             return None
         from game.objects.base_station import BaseStation
         from game.objects.vessel import Vessel
