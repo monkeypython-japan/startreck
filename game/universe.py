@@ -35,7 +35,9 @@ class Universe:
 
     @property
     def victory(self) -> str | None:
-        """勝者を返す。ゲーム継続中は None。"""
+        """勝者を返す。ゲーム継続中は None。未初期化（オブジェクトなし）は None。"""
+        if not self.objects:
+            return None
         from game.objects.base_station import BaseStation
         from game.objects.vessel import Vessel
 
