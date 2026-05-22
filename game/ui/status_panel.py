@@ -13,6 +13,8 @@ TITLE_COLOR = (120, 180, 255)
 LABEL_COLOR = (130, 130, 150)
 VALUE_COLOR = (200, 210, 220)
 BAR_BG = (35, 38, 52)
+BAR_TEXT_COLOR = (255, 255, 255)
+BAR_TEXT_SHADOW = (0, 0, 0)
 DIVIDER = (50, 55, 70)
 PADDING = 8
 LINE_H = 19
@@ -25,6 +27,12 @@ def _bar(screen: pygame.Surface, x: int, y: int, w: int, ratio: float, color: tu
     fill = int(w * max(0.0, min(1.0, ratio)))
     if fill > 0:
         pygame.draw.rect(screen, color, (x, y, fill, BAR_H))
+
+
+def _bar_text(font: pygame.font.Font, screen: pygame.Surface, text: str, x: int, y: int) -> None:
+    """バー上の値テキストを黒影付きで描画する（バー色に関わらず読める）。"""
+    screen.blit(font.render(text, True, BAR_TEXT_SHADOW), (x + 1, y + 1))
+    screen.blit(font.render(text, True, BAR_TEXT_COLOR), (x, y))
 
 
 class StatusPanel:
@@ -70,7 +78,7 @@ class StatusPanel:
         screen.blit(self.font.render("HP", True, LABEL_COLOR), (x, y))
         _bar(screen, x + BAR_LABEL_W, y, w - BAR_LABEL_W, hp_ratio, hp_color)
         val = f"{player.durability - player.damage:.0f}/{player.durability:.0f}gj"
-        screen.blit(self.font.render(val, True, VALUE_COLOR), (x + BAR_LABEL_W + 2, y))
+        _bar_text(self.font, screen, val, x + BAR_LABEL_W + 2, y)
         y += LINE_H
 
         # シールド バー
@@ -79,7 +87,7 @@ class StatusPanel:
             screen.blit(self.font.render("SH", True, LABEL_COLOR), (x, y))
             _bar(screen, x + BAR_LABEL_W, y, w - BAR_LABEL_W, shield_r, (55, 155, 220))
             sh_val = f"{player.shield.current_rate:.0f}% (設定:{player.shield.set_rate:.0f}%)"
-            screen.blit(self.font.render(sh_val, True, VALUE_COLOR), (x + BAR_LABEL_W + 2, y))
+            _bar_text(self.font, screen, sh_val, x + BAR_LABEL_W + 2, y)
             y += LINE_H
 
         # キャパシタ バー
@@ -88,14 +96,14 @@ class StatusPanel:
             screen.blit(self.font.render("CAP", True, LABEL_COLOR), (x, y))
             _bar(screen, x + BAR_LABEL_W, y, w - BAR_LABEL_W, cap_r, (90, 170, 255))
             cap_val = f"{player.generator.capacitor:.0f}/{player.generator.capacitor_max:.0f}gj"
-            screen.blit(self.font.render(cap_val, True, VALUE_COLOR), (x + BAR_LABEL_W + 2, y))
+            _bar_text(self.font, screen, cap_val, x + BAR_LABEL_W + 2, y)
             y += LINE_H
 
             fuel_r = player.generator.fuel / player.generator.fuel_max
             screen.blit(self.font.render("FUEL", True, LABEL_COLOR), (x, y))
             _bar(screen, x + BAR_LABEL_W, y, w - BAR_LABEL_W, fuel_r, (200, 155, 55))
             fuel_val = f"{player.generator.fuel:.0f}/{player.generator.fuel_max:.0f}gj"
-            screen.blit(self.font.render(fuel_val, True, VALUE_COLOR), (x + BAR_LABEL_W + 2, y))
+            _bar_text(self.font, screen, fuel_val, x + BAR_LABEL_W + 2, y)
             y += LINE_H
 
         # ミサイル残弾

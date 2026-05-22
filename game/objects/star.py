@@ -9,5 +9,5 @@ class Star(Thing):
     def __init__(self, pos: Vec2) -> None:
         super().__init__(pos, size=STAR_SIZE, durability=float("inf"))
 
-    def receive_damage(self, amount: float) -> None:
-        pass  # 恒星は破壊されない
+    def receive_damage(self, amount: float) -> float:
+        return 0.0  # 恒星は破壊されない
