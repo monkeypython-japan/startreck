@@ -47,6 +47,7 @@ class BeamLauncher(Equipment):
             power=self.beam_power,
             speed=self.beam_speed,
             max_range=self.beam_range,
+            owner=self.owner,
             on_report=self._on_report,
         )
         if self._on_report:

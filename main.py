@@ -14,7 +14,7 @@ def main() -> None:
     screen = pygame.display.set_mode((WINDOW_W, WINDOW_H))
     pygame.display.set_caption("Startreck")
     clock = pygame.time.Clock()
-    font_large = make_font(48)
+    font_large = make_font(56)
 
     universe = Universe()
     player = initialize(universe)

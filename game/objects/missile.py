@@ -55,9 +55,16 @@ class Missile(Mover):
             return
         dist = distance_grid(self.pos, target.pos) - target.size
         if dist <= DETONATE_RANGE:
-            target.receive_damage(self.power)
+            hull_dmg = target.receive_damage(self.power)
             self.destroyed = True
             if self._on_report:
-                self._on_report(
-                    f"ミサイル命中: {type(target).__name__} に {self.power:.0f}gj ダメージ"
-                )
+                shield_absorbed = self.power - hull_dmg
+                if shield_absorbed > 0:
+                    self._on_report(
+                        f"ミサイル命中: {type(target).__name__} "
+                        f"シールド{shield_absorbed:.0f}gj吸収 / 艦体{hull_dmg:.0f}gj"
+                    )
+                else:
+                    self._on_report(
+                        f"ミサイル命中: {type(target).__name__} に {hull_dmg:.0f}gj ダメージ"
+                    )
