@@ -74,11 +74,11 @@ def test_universe_sets_vessel_universe_ref():
     assert d.universe is uni
 
 def test_vessels_detect_and_fire():
-    """レーダー範囲内 (700 grid) に配置したBOT艦がミサイルを発射することを確認。"""
+    """レーダー範囲内 (400 grid) に配置したBOT艦がミサイルを発射することを確認。"""
     uni = Universe()
-    # 700 grid: レーダー範囲 750 grid 内 かつ ビーム射程 500 grid 外 → ミサイル発射
-    fed = Destroyer(Vec2(4.65, 5.0), faction="U")
-    kli = Destroyer(Vec2(5.35, 5.0), faction="K")
+    # 400 grid: ミサイル射程 500 grid 内 → ミサイル発射
+    fed = Destroyer(Vec2(4.80, 5.0), faction="U")
+    kli = Destroyer(Vec2(5.20, 5.0), faction="K")
     uni.add(fed)
     uni.add(kli)
     from game.objects.missile import Missile
@@ -89,11 +89,11 @@ def test_vessels_detect_and_fire():
     assert len(missiles) > 0
 
 def test_missile_fired_at_enemy():
-    """BOTがミサイル射程内 (700 grid) に入ったらミサイルを発射することを確認。"""
+    """BOTがミサイル射程内 (400 grid) に入ったらミサイルを発射することを確認。"""
     uni = Universe()
-    # 700 grid: レーダー範囲 750 grid 内, ミサイル射程 1000 grid 内, ビーム射程 500 grid 外
-    fed = Destroyer(Vec2(4.65, 5.0), faction="U")
-    kli = Destroyer(Vec2(5.35, 5.0), faction="K")
+    # 400 grid: ミサイル射程 500 grid 内, ビーム射程 750 grid 内 → ミサイル優先発射
+    fed = Destroyer(Vec2(4.80, 5.0), faction="U")
+    kli = Destroyer(Vec2(5.20, 5.0), faction="K")
     uni.add(fed)
     uni.add(kli)
     from game.objects.missile import Missile

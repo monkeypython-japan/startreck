@@ -44,18 +44,18 @@ SPECIAL_SHIP = dict(
 MISSILE_STANDARD = dict(
     power=500,        # gj
     speed=100,        # grid/sec
-    flight_time=10,   # sec
+    flight_time=5,    # sec
 )
 
 BEAM_STANDARD = dict(
     power=250,        # gj
     speed=200,        # grid/sec
-    range=500,        # grid
+    range=750,        # grid
 )
 
 SHIELD_STANDARD = dict(
-    max_defense_energy=500,    # gj
-    recovery_rate=1.0,         # %/sec
+    max_defense_energy=250,    # gj
+    recovery_rate=0.5,         # %/sec
     recovery_energy_cost=5.0,  # gj/%
     deploy_energy_cost=2.0,    # gj/%/sec
 )
@@ -65,18 +65,18 @@ SHIELD_STANDARD = dict(
 MISSILE_SPECIAL = dict(
     power=500,
     speed=150,
-    flight_time=15,
+    flight_time=7.5,
 )
 
 BEAM_SPECIAL = dict(
     power=250,
     speed=200,
-    range=1000,
+    range=1500,
 )
 
 SHIELD_SPECIAL = dict(
-    max_defense_energy=750,
-    recovery_rate=2.0,
+    max_defense_energy=375,
+    recovery_rate=1.0,
     recovery_energy_cost=5.0,
     deploy_energy_cost=2.0,
 )
@@ -87,7 +87,7 @@ BEAM_PARTIAL_DAMAGE_RANGE = 20  # grid  10〜20 grid: 25%
 BEAM_PARTIAL_DAMAGE_RATE = 0.25
 
 # --- ビーム発射コスト ---
-BEAM_ENERGY_COST_RATE = 1.25  # ビーム威力の125%
+BEAM_ENERGY_COST_RATE = 1.10  # ビーム威力の110%
 
 # --- 移動コスト ---
 MOVE_ENERGY_PER_SPEED = 1.0  # gj per grid/sec の速度変化
