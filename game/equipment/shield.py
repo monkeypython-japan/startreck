@@ -27,8 +27,9 @@ class Shield(Equipment):
 
     def set_defense_rate(self, rate: float) -> None:
         self.set_rate = max(0.0, min(rate, 100.0))
-        if self.current_rate < self.set_rate:
-            self.current_rate = self.set_rate
+        # 設定値が変わったら current_rate を即座に新設定値に合わせる
+        # (上げ: 即時展開 / 下げ: 即時解除)
+        self.current_rate = self.set_rate
 
     def absorb(self, incoming_damage: float) -> float:
         """ダメージを吸収し、艦体に届くダメージ量を返す。

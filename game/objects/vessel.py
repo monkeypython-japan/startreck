@@ -94,14 +94,23 @@ class Vessel(Mover):
         self.bridge = Bridge(self, self.radar)
 
     def receive_damage(self, amount: float) -> float:
+        original = amount
         if self.shield is not None and self.shield.current_rate > 0:
             amount = self.shield.absorb(amount)
-        return super().receive_damage(amount)
+        hull_dmg = super().receive_damage(amount)
+        if hull_dmg > 0 and self.bridge and self.bridge.gunner:
+            self.bridge.gunner.report_hit(hull_dmg, original - hull_dmg)
+        return hull_dmg
 
     def set_speed(self, new_speed: float) -> None:
-        cost = self.accelerate(new_speed, self.max_speed)
-        if self.generator and cost > 0:
-            self.generator.request_energy(cost)
+        new_speed = max(0.0, min(new_speed, self.max_speed))
+        cost = abs(new_speed - self.speed)
+        if cost > 0:
+            if self.generator:
+                if self.generator.capacitor < cost:
+                    return  # エネルギー不足: 速度変更不可
+                self.generator.request_energy(cost)
+        self.speed = new_speed
 
     def supply_full(self) -> None:
         """補給を受けて満載状態にする（ダメージ回復・燃料・ミサイル）。"""

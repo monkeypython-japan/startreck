@@ -135,7 +135,9 @@ class GameUI:
         if key == pygame.K_SPACE:
             self._cmd_stop()
         elif key == pygame.K_s:
-            rate = 0 if (self.player.shield and self.player.shield.set_rate > 0) else 100
+            gun = self.player.bridge and self.player.bridge.gunner
+            current = gun._manual_shield_rate if gun else 0
+            rate = 0 if current > 0 else 100
             self._cmd_shield(rate)
 
     # ─── ポップアップメニュー構築 ─────────────────────────────
@@ -228,8 +230,9 @@ class GameUI:
             self.message_window.add("ビーム発射指示")
 
     def _cmd_shield(self, rate: float) -> None:
-        if self.player.shield:
-            self.player.shield.set_defense_rate(rate)
+        gun = self.player.bridge and self.player.bridge.gunner
+        if gun:
+            gun.set_manual_shield_rate(rate)
             self.message_window.add(f"シールド設定: {rate:.0f}%")
 
     def _cmd_jump(self, base) -> None:

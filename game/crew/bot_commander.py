@@ -1,10 +1,9 @@
 """BOTコマンダー: NPC艦艇の自律AIコマンダー。"""
 from __future__ import annotations
-from game.coords import Vec2, distance_grid, direction_to, GRID
+from game.coords import Vec2, distance_grid, direction_to, wrap_vec
 from game.crew.commander import Commander
-from game.constants import BOT_RETREAT_DAMAGE_RATE, BOT_HOME_ORBIT_RADIUS
+from game.constants import BOT_RETREAT_DAMAGE_RATE
 from typing import TYPE_CHECKING
-import math
 
 if TYPE_CHECKING:
     from game.objects.vessel import Vessel
@@ -115,13 +114,15 @@ class BotCommander(Commander):
         return min(candidates, key=lambda o: distance_grid(pos, o.pos))
 
     def _patrol(self) -> None:
-        """敵がいない場合はホームオブジェクト周辺の円軌道上で待機。"""
-        if not self.home or not self.vessel.bridge or not self.vessel.bridge.navigator:
+        """敵不在時はホームから離れる方向に最大速度で索敵移動する。"""
+        nav = self.vessel.bridge.navigator if self.vessel.bridge else None
+        if not nav or not self.home:
             return
-        dir_to_us = direction_to(self.home.pos, self.vessel.pos)
-        r = BOT_HOME_ORBIT_RADIUS * GRID
-        orbit = Vec2(
-            self.home.pos.x + dir_to_us.x * r,
-            self.home.pos.y + dir_to_us.y * r,
-        )
-        self.vessel.bridge.navigator.set_destination(orbit, speed=self.vessel.max_speed * 0.5)
+        away_dir = direction_to(self.home.pos, self.vessel.pos)
+        if away_dir.length() == 0.0:
+            return
+        target = wrap_vec(Vec2(
+            self.vessel.pos.x + away_dir.x * 2.0,
+            self.vessel.pos.y + away_dir.y * 2.0,
+        ))
+        nav.set_destination(target, speed=self.vessel.max_speed)
