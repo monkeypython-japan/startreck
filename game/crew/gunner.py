@@ -62,7 +62,7 @@ class Gunner(BridgeCrew):
         elif beam_threat:
             self.vessel.shield.set_defense_rate(SHIELD_AUTO_BEAM_RATE)
         else:
-            # 脅威消滅時はプレーヤーの手動設定値に戻す（未設定なら0%）
+            # 脅威なし: コマンダーの設定値に戻す（未設定 = 0%）
             self.vessel.shield.set_defense_rate(self._manual_shield_rate)
 
     def _process_attacks(self) -> None:
