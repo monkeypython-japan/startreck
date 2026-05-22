@@ -93,10 +93,10 @@ class Vessel(Mover):
         )
         self.bridge = Bridge(self, self.radar)
 
-    def receive_damage(self, amount: float) -> None:
+    def receive_damage(self, amount: float) -> float:
         if self.shield is not None and self.shield.current_rate > 0:
             amount = self.shield.absorb(amount)
-        super().receive_damage(amount)
+        return super().receive_damage(amount)
 
     def set_speed(self, new_speed: float) -> None:
         cost = self.accelerate(new_speed, self.max_speed)

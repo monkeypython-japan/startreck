@@ -7,7 +7,10 @@ from game.constants import (
     BEAM_PARTIAL_DAMAGE_RANGE,
     BEAM_PARTIAL_DAMAGE_RATE,
 )
-from typing import Callable
+from typing import TYPE_CHECKING, Callable
+
+if TYPE_CHECKING:
+    from game.objects.thing import Thing
 
 
 class Beam(Mover):
@@ -19,6 +22,7 @@ class Beam(Mover):
         power: float,
         speed: float,
         max_range: float,
+        owner: "Thing | None" = None,
         on_report: Callable[[str], None] | None = None,
     ) -> None:
         super().__init__(origin, size=0.0, durability=1.0)
@@ -29,6 +33,7 @@ class Beam(Mover):
         self.power: float = power   # gj
         self.max_range: float = max_range   # grid
         self.traveled: float = 0.0          # grid
+        self.owner: "Thing | None" = owner
         self._on_report: Callable[[str], None] | None = on_report
 
     def update(self, dt: float) -> None:
@@ -47,7 +52,7 @@ class Beam(Mover):
             return
         from game.objects.star import Star
         for obj in objects:
-            if obj is self:
+            if obj is self or obj is self.owner:
                 continue
             dist = distance_grid(self.pos, obj.pos) - obj.size
             if isinstance(obj, Star):
@@ -61,10 +66,17 @@ class Beam(Mover):
                 dmg = self.power * BEAM_PARTIAL_DAMAGE_RATE
             else:
                 continue
-            obj.receive_damage(dmg)
+            hull_dmg = obj.receive_damage(dmg)
             self.destroyed = True
             if self._on_report:
-                self._on_report(
-                    f"ビーム命中: {type(obj).__name__} に {dmg:.0f}gj ダメージ"
-                )
+                shield_absorbed = dmg - hull_dmg
+                if shield_absorbed > 0:
+                    self._on_report(
+                        f"ビーム命中: {type(obj).__name__} "
+                        f"シールド{shield_absorbed:.0f}gj吸収 / 艦体{hull_dmg:.0f}gj"
+                    )
+                else:
+                    self._on_report(
+                        f"ビーム命中: {type(obj).__name__} に {hull_dmg:.0f}gj ダメージ"
+                    )
             return

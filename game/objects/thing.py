@@ -18,12 +18,14 @@ class Thing:
         self.damage: float = 0.0            # 蓄積ダメージ (gj)
         self.destroyed: bool = False
 
-    def receive_damage(self, amount: float) -> None:
+    def receive_damage(self, amount: float) -> float:
+        """ダメージを適用し、実際に船体に与えたダメージ量を返す。"""
         if self.destroyed:
-            return
+            return 0.0
         self.damage += amount
         if self.damage >= self.durability:
             self.destroyed = True
+        return amount
 
     def update(self, dt: float) -> None:
         pass
