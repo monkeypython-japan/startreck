@@ -5,6 +5,7 @@ import pygame
 MSG_BG = (8, 10, 18)
 MSG_BORDER = (60, 60, 80)
 MSG_TEXT = (170, 190, 170)
+MSG_ALERT = (255, 60, 60)
 TITLE_COLOR = (100, 160, 100)
 PADDING = 5
 LINE_H = 18
@@ -14,17 +15,20 @@ class MessageWindow:
     def __init__(self, rect: pygame.Rect, font: pygame.font.Font) -> None:
         self.rect = rect
         self.font = font
-        self.messages: list[str] = []
+        self.messages: list[tuple[str, tuple]] = []
         self._max = 300
         self._scroll = 0
 
-    def add(self, message: str) -> None:
-        self.messages.append(message)
+    def add(self, message: str, color: tuple | None = None) -> None:
+        self.messages.append((message, color or MSG_TEXT))
         if len(self.messages) > self._max:
             self.messages = self.messages[-self._max:]
         text_h = self.rect.height - PADDING * 2 - LINE_H
         max_scroll = max(0, len(self.messages) * LINE_H - text_h)
         self._scroll = max_scroll
+
+    def add_alert(self, message: str) -> None:
+        self.add(message, MSG_ALERT)
 
     def scroll(self, delta: int) -> None:
         text_h = self.rect.height - PADDING * 2 - LINE_H
@@ -47,9 +51,9 @@ class MessageWindow:
         screen.set_clip(text_rect)
 
         y = text_rect.top - self._scroll
-        for msg in self.messages:
+        for msg, color in self.messages:
             if text_rect.top <= y + LINE_H and y <= text_rect.bottom:
-                surf = self.font.render(msg, True, MSG_TEXT)
+                surf = self.font.render(msg, True, color)
                 screen.blit(surf, (text_rect.left, y))
             y += LINE_H
 

@@ -61,6 +61,7 @@ class GameUI:
         self.popup = PopupMenu(font, WINDOW_W, WINDOW_H)
 
         self._pending: str | None = None  # "jump_select"
+        self._explosions: list[dict] = []  # 爆発エフェクトリスト
 
         self.message_window.add("U.S.S. YUKIKAZE 出撃準備完了")
         self.message_window.add("マップをクリックして操作してください")
@@ -150,12 +151,22 @@ class GameUI:
         items: list[MenuItem] = []
 
         if isinstance(obj, SpecialShip) and obj is self.player:
+            from game.coords import distance_grid
+            from game.constants import SUPPLY_RANGE
+            from game.objects.base_station import BaseStation as BS
+            can_supply = any(
+                isinstance(o, BS) and o.faction == "U"
+                and distance_grid(self.player.pos, o.pos) <= SUPPLY_RANGE
+                for o in self.universe.objects
+            )
             items = [
                 MenuItem("停止 [SPACE]", self._cmd_stop),
                 MenuItem("シールド 0%", lambda: self._cmd_shield(0)),
                 MenuItem("シールド 50%", lambda: self._cmd_shield(50)),
                 MenuItem("シールド 100%", lambda: self._cmd_shield(100)),
             ]
+            if can_supply:
+                items.append(MenuItem("補給", self._cmd_supply))
             if self.player.jump_drive:
                 ready = (self.player.generator is not None and
                          self.player.generator.capacitor >= self.player.jump_drive.required_energy)
@@ -235,6 +246,10 @@ class GameUI:
             gun.set_manual_shield_rate(rate)
             self.message_window.add(f"シールド設定: {rate:.0f}%")
 
+    def _cmd_supply(self) -> None:
+        self.player.supply_full()
+        self.message_window.add("補給完了: ダメージ回復・燃料・ミサイル満載")
+
     def _cmd_jump(self, base) -> None:
         if self.player.jump_drive and self.player.generator:
             ok = self.player.jump_drive.jump(base, self.player.generator)
@@ -243,14 +258,31 @@ class GameUI:
     # ─── 描画 ──────────────────────────────────────────────────
 
     def _collect_messages(self) -> None:
+        from game.constants import REPORT_ALERT
         while self.player.messages:
-            self.message_window.add(self.player.messages.pop(0))
+            msg = self.player.messages.pop(0)
+            if msg.startswith(REPORT_ALERT):
+                self.message_window.add_alert(msg[len(REPORT_ALERT):])
+            else:
+                self.message_window.add(msg)
+
+    def _collect_explosions(self) -> None:
+        import pygame
+        now_ms = pygame.time.get_ticks()
+        for pos in self.universe.recent_explosions:
+            self._explosions.append({"pos": pos, "start_ms": now_ms, "duration": 1.5, "max_r": 20})
+        self.universe.recent_explosions.clear()
+        self._explosions = [e for e in self._explosions
+                            if (now_ms - e["start_ms"]) / 1000.0 < e["duration"]]
 
     def draw(self) -> None:
         self._collect_messages()
+        self._collect_explosions()
         self.screen.fill(BG_COLOR)
         self.galaxy_map.draw(self.screen, self.universe)
+        self.galaxy_map.draw_explosions(self.screen, self._explosions)
         self.radar_view.draw(self.screen)
+        self.radar_view.draw_explosions(self.screen, self._explosions)
         self.status_panel.draw(self.screen, self.universe, self.player)
         self.message_window.draw(self.screen)
         self.popup.draw(self.screen)

@@ -89,6 +89,9 @@ BEAM_PARTIAL_DAMAGE_RATE = 0.25
 # --- ビーム発射コスト ---
 BEAM_ENERGY_COST_RATE = 1.10  # ビーム威力の110%
 
+# --- メッセージ ---
+REPORT_ALERT = "\x00"  # このプレフィックスを付けると赤字で表示される
+
 # --- 移動コスト ---
 MOVE_ENERGY_PER_SPEED = 1.0  # gj per grid/sec の速度変化
 
