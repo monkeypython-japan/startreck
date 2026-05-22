@@ -40,6 +40,11 @@ class JumpDrive(Equipment):
         dx = math.cos(angle) * radius
         dy = math.sin(angle) * radius
         self.owner.pos = wrap_vec(Vec2(target.pos.x + dx, target.pos.y + dy))
+        # ジャンプ後は自動停止
+        self.owner.speed = 0.0
+        from game.objects.vessel import Vessel
+        if isinstance(self.owner, Vessel) and self.owner.bridge and self.owner.bridge.navigator:
+            self.owner.bridge.navigator.stop()
         if self._on_report:
             self._on_report(f"ジャンプ完了: {target.pos} 近傍に移動")
         return True
