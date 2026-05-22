@@ -28,7 +28,7 @@ def _color_for(obj) -> tuple:
     if isinstance(obj, Star):
         return (220, 220, 60)
     if isinstance(obj, BaseStation):
-        return (255, 140, 0) if obj.faction == "U" else (200, 60, 60)
+        return (60, 120, 255) if obj.faction == "U" else (200, 60, 60)
     if isinstance(obj, SpecialShip):
         return (255, 255, 100)
     if isinstance(obj, Vessel):
@@ -49,7 +49,7 @@ def _radius_for(obj) -> int:
     from game.objects.missile import Missile
     from game.objects.beam import Beam
     if isinstance(obj, Star):
-        return max(4, int(obj.size * 1.2))  # 星型表示用の半径
+        return max(8, int(obj.size * 2.4))  # 2倍サイズの星型
     if isinstance(obj, BaseStation):
         return 7
     if isinstance(obj, SpecialShip):
@@ -189,8 +189,9 @@ class GalaxyMap:
                 draw_star(surface, color, sx, sy, r)
             else:
                 pygame.draw.circle(surface, color, (sx, sy), r)
-            # 旗艦は外側に二重丸を追加
-            if isinstance(obj, HeavyCruiser):
+            # 旗艦・連邦基地は外側に二重丸を追加
+            from game.objects.base_station import BaseStation as BS
+            if isinstance(obj, HeavyCruiser) or (isinstance(obj, BS) and obj.faction == "U"):
                 pygame.draw.circle(surface, color, (sx, sy), r + 4, 1)
             if obj is self.selected:
                 pygame.draw.circle(surface, HIGHLIGHT_COLOR, (sx, sy), r + 4, 1)

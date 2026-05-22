@@ -27,6 +27,11 @@ class BotCommander(Commander):
         if self.home is not None and self.home.destroyed:
             self._reassign_home()
 
+        # 自艦への攻撃がない場合はシールドを0に設定する
+        if not self._under_attack():
+            if self.vessel.bridge and self.vessel.bridge.gunner:
+                self.vessel.bridge.gunner.set_manual_shield_rate(0.0)
+
         # 大破時は補給地点へ退避
         if self.vessel.damage >= self.vessel.durability * BOT_RETREAT_DAMAGE_RATE:
             self._retreat()
@@ -124,6 +129,23 @@ class BotCommander(Commander):
             return None
         pos = self.vessel.pos
         return min(candidates, key=lambda o: distance_grid(pos, o.pos))
+
+    def _under_attack(self) -> bool:
+        """自艦に向かう敵武器がレーダー範囲内にあるか確認する。"""
+        if not self.vessel.radar:
+            return False
+        from game.objects.beam import Beam
+        from game.objects.missile import Missile
+        from game.coords import direction_to
+        enemy_iff = "K" if self.vessel.faction == "U" else "U"
+        for c in self.vessel.radar.contacts:
+            if isinstance(c, Beam) and c.iff == enemy_iff:
+                return True
+            if isinstance(c, Missile) and c.iff == enemy_iff:
+                to_us = direction_to(c.pos, self.vessel.pos)
+                if c.heading.x * to_us.x + c.heading.y * to_us.y > 0.5:
+                    return True
+        return False
 
     def _reassign_home(self) -> None:
         """ホームが破壊されたとき、生き残った同種・同勢力のホームに再割り当てする。"""
