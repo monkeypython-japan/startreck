@@ -9,6 +9,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 -  `main` への直接コミットは禁止。
 - ブランチ上で変更を実施したら、ユーザーがテストを行う。
 - テスト完了後、Claude がコミットして `main` へマージする。
+- マージに先立ち、ブランチの変更内容に仕様の変更（挙動・数値・UI・AIロジック）が含まれる場合は `startreck-sprec.md` に反映してから `main` へマージする。
 
 ## プロジェクト概要
 
