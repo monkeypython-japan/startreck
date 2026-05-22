@@ -1,8 +1,10 @@
 """レーダービュー: 現在スキャン結果を白背景でプレーヤー中心に表示する。"""
 from __future__ import annotations
+import math
 import pygame
 from game.coords import Vec2, GRID
 from game.ui.draw_utils import draw_dashed_line, draw_dashed_circle
+from game.ui.font_util import make_font
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -55,6 +57,16 @@ def _radius_for(obj) -> int:
     if isinstance(obj, (Missile, Beam)):
         return 2
     return 3
+
+
+_sector_font: pygame.font.Font | None = None
+
+
+def _get_sector_font() -> pygame.font.Font:
+    global _sector_font
+    if _sector_font is None:
+        _sector_font = make_font(10)
+    return _sector_font
 
 
 class RadarView:
@@ -117,26 +129,48 @@ class RadarView:
     # ── 描画サブルーチン ────────────────────────────────────────
 
     def _draw_grid(self, surface: pygame.Surface) -> None:
-        """破線のセクタグリッドを描画する（白背景用の暗めの色）。"""
+        """破線のセクタグリッドとセクター番号を描画する（白背景用の暗めの色）。"""
         px, py = self.player.pos.x, self.player.pos.y
         scale = self._scale
         w, h = self.rect.width, self.rect.height
         gs = pygame.Surface((w, h), pygame.SRCALPHA)
         color = (*GRID_COLOR, 100)
+        font = _get_sector_font()
+        sector_color = (120, 130, 160)
+
+        x_screen: dict[int, int] = {}  # sector_x → screen_x (左端)
+        y_screen: dict[int, int] = {}  # sector_y → screen_y (上端)
+
         for i in range(10):
             dx = float(i) - px
             if dx > 5.0: dx -= 10.0
             elif dx < -5.0: dx += 10.0
             sx = int(w / 2 + dx * scale)
+            x_screen[i] = sx
             if -2 <= sx <= w + 2:
                 draw_dashed_line(gs, color, (sx, 0), (sx, h), dash=6, gap=4)
             dy = float(i) - py
             if dy > 5.0: dy -= 10.0
             elif dy < -5.0: dy += 10.0
             sy = int(h / 2 + dy * scale)
+            y_screen[i] = sy
             if -2 <= sy <= h + 2:
                 draw_dashed_line(gs, color, (0, sy), (w, sy), dash=6, gap=4)
+
         surface.blit(gs, self.rect.topleft)
+
+        # セクター番号をグリッド左上に描画
+        rx, ry = self.rect.left, self.rect.top
+        old_clip = surface.get_clip()
+        surface.set_clip(self.rect)
+        for sx_idx in range(10):
+            sx = x_screen[sx_idx]
+            for sy_idx in range(10):
+                sy = y_screen[sy_idx]
+                label = f"{sx_idx},{sy_idx}"
+                lsurf = font.render(label, True, sector_color)
+                surface.blit(lsurf, (rx + sx + 2, ry + sy + 1))
+        surface.set_clip(old_clip)
 
     def _draw_objects(self, surface: pygame.Surface) -> None:
         from game.objects.vessel import Vessel
@@ -155,6 +189,14 @@ class RadarView:
                 continue
             color = _color_for(obj)
             r = _radius_for(obj)
+
+            # 自艦撃沈時はバツ印で表示
+            if obj is self.player and obj.destroyed:
+                d = r + 3
+                pygame.draw.line(surface, (200, 0, 0), (sx - d, sy - d), (sx + d, sy + d), 3)
+                pygame.draw.line(surface, (200, 0, 0), (sx + d, sy - d), (sx - d, sy + d), 3)
+                continue
+
             pygame.draw.circle(surface, color, (sx, sy), r)
             if obj is self.selected:
                 pygame.draw.circle(surface, HIGHLIGHT_COLOR, (sx, sy), r + 4, 1)
@@ -163,7 +205,16 @@ class RadarView:
                 ey = int(sy + obj.heading.y * 16)
                 pygame.draw.line(surface, color, (sx, sy), (ex, ey), 2)
             if isinstance(obj, Beam):
-                ox, oy = self.world_to_screen(obj.origin)
+                # origin を tip 相対でラッピングして描画（境界跨ぎで逆方向になるのを防ぐ）
+                scale = self._scale
+                ddx = obj.origin.x - obj.pos.x
+                ddy = obj.origin.y - obj.pos.y
+                if ddx > 5.0: ddx -= 10.0
+                elif ddx < -5.0: ddx += 10.0
+                if ddy > 5.0: ddy -= 10.0
+                elif ddy < -5.0: ddy += 10.0
+                ox = int(sx + ddx * scale)
+                oy = int(sy + ddy * scale)
                 pygame.draw.line(surface, color, (ox, oy), (sx, sy), 1)
 
     def draw_explosions(self, surface: pygame.Surface, explosions: list) -> None:

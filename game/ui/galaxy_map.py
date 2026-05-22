@@ -159,13 +159,27 @@ class GalaxyMap:
     def _draw_objects(self, surface: pygame.Surface, universe: "Universe") -> None:
         from game.objects.vessel import Vessel
         from game.objects.beam import Beam
-        for obj in universe.objects:
+
+        draw_list = list(universe.objects)
+        # 自艦が破壊されて universe から削除されていても常に描画する
+        if self.player not in draw_list:
+            draw_list.append(self.player)
+
+        for obj in draw_list:
             sx, sy = self.world_to_screen(obj.pos)
             if not (self.rect.left - 20 <= sx <= self.rect.right + 20 and
                     self.rect.top - 20 <= sy <= self.rect.bottom + 20):
                 continue
             color = _color_for(obj)
             r = _radius_for(obj)
+
+            # 自艦撃沈時はバツ印で表示
+            if obj is self.player and obj.destroyed:
+                d = r + 3
+                pygame.draw.line(surface, (255, 60, 60), (sx - d, sy - d), (sx + d, sy + d), 3)
+                pygame.draw.line(surface, (255, 60, 60), (sx + d, sy - d), (sx - d, sy + d), 3)
+                continue
+
             pygame.draw.circle(surface, color, (sx, sy), r)
             if obj is self.selected:
                 pygame.draw.circle(surface, HIGHLIGHT_COLOR, (sx, sy), r + 4, 1)
@@ -174,7 +188,15 @@ class GalaxyMap:
                 ey = int(sy + obj.heading.y * 16)
                 pygame.draw.line(surface, color, (sx, sy), (ex, ey), 2)
             if isinstance(obj, Beam):
-                ox, oy = self.world_to_screen(obj.origin)
+                # origin を tip 相対でラッピングして描画（境界跨ぎで逆方向になるのを防ぐ）
+                ddx = obj.origin.x - obj.pos.x
+                ddy = obj.origin.y - obj.pos.y
+                if ddx > 5.0: ddx -= 10.0
+                elif ddx < -5.0: ddx += 10.0
+                if ddy > 5.0: ddy -= 10.0
+                elif ddy < -5.0: ddy += 10.0
+                ox = int(sx + ddx * self._scale)
+                oy = int(sy + ddy * self._scale)
                 pygame.draw.line(surface, color, (ox, oy), (sx, sy), 1)
 
     def draw_explosions(self, surface: pygame.Surface, explosions: list) -> None:

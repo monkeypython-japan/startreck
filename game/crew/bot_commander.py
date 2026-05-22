@@ -23,6 +23,10 @@ class BotCommander(Commander):
         if not self.vessel.integrator or not self.vessel.radar:
             return
 
+        # ホームが破壊されていれば生き残ったホームに再割り当て
+        if self.home is not None and self.home.destroyed:
+            self._reassign_home()
+
         # 大破時は補給地点へ退避
         if self.vessel.damage >= self.vessel.durability * BOT_RETREAT_DAMAGE_RATE:
             self._retreat()
@@ -120,6 +124,24 @@ class BotCommander(Commander):
             return None
         pos = self.vessel.pos
         return min(candidates, key=lambda o: distance_grid(pos, o.pos))
+
+    def _reassign_home(self) -> None:
+        """ホームが破壊されたとき、生き残った同種・同勢力のホームに再割り当てする。"""
+        if not self.vessel.universe:
+            self.home = None
+            return
+        from game.objects.base_station import BaseStation
+        from game.objects.vessel import Vessel
+        faction = self.vessel.faction
+        if isinstance(self.home, BaseStation):
+            candidates = [o for o in self.vessel.universe.objects
+                          if isinstance(o, BaseStation) and o.faction == faction]
+        else:
+            candidates = [o for o in self.vessel.universe.objects
+                          if isinstance(o, Vessel) and o is not self.vessel
+                          and o.faction == faction and o.supply_provider]
+        pos = self.vessel.pos
+        self.home = min(candidates, key=lambda o: distance_grid(pos, o.pos)) if candidates else None
 
     def _patrol(self) -> None:
         """敵不在時はホームから離れる方向に最大速度で索敵移動する。"""
