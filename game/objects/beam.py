@@ -69,6 +69,7 @@ class Beam(Mover):
             hull_dmg = obj.receive_damage(dmg)
             self.destroyed = True
             if self._on_report:
+                from game.constants import REPORT_ALERT
                 shield_absorbed = dmg - hull_dmg
                 if shield_absorbed > 0:
                     self._on_report(
@@ -79,4 +80,6 @@ class Beam(Mover):
                     self._on_report(
                         f"ビーム命中: {type(obj).__name__} に {hull_dmg:.0f}gj ダメージ"
                     )
+                if obj.destroyed:
+                    self._on_report(f"{REPORT_ALERT}{type(obj).__name__} 撃沈")
             return

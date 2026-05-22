@@ -96,7 +96,12 @@ class BotCommander(Commander):
 
     def _retreat(self) -> None:
         supply = self._nearest_supply()
-        if supply and self.vessel.bridge and self.vessel.bridge.navigator:
+        if supply is None:
+            return
+        from game.constants import SUPPLY_RANGE
+        if distance_grid(self.vessel.pos, supply.pos) <= SUPPLY_RANGE:
+            self.vessel.supply_full()
+        elif self.vessel.bridge and self.vessel.bridge.navigator:
             self.vessel.bridge.navigator.set_destination(supply.pos, speed=self.vessel.max_speed)
 
     def _nearest_supply(self) -> "Thing | None":
@@ -104,9 +109,12 @@ class BotCommander(Commander):
         if not self.vessel.universe:
             return None
         from game.objects.base_station import BaseStation
+        from game.objects.vessel import Vessel
         candidates = [
             o for o in self.vessel.universe.objects
-            if isinstance(o, BaseStation) and o.faction == self.vessel.faction
+            if (isinstance(o, BaseStation) and o.faction == self.vessel.faction)
+            or (isinstance(o, Vessel) and o is not self.vessel
+                and o.faction == self.vessel.faction and o.supply_provider)
         ]
         if not candidates:
             return None

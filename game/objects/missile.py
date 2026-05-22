@@ -58,6 +58,7 @@ class Missile(Mover):
             hull_dmg = target.receive_damage(self.power)
             self.destroyed = True
             if self._on_report:
+                from game.constants import REPORT_ALERT
                 shield_absorbed = self.power - hull_dmg
                 if shield_absorbed > 0:
                     self._on_report(
@@ -68,3 +69,5 @@ class Missile(Mover):
                     self._on_report(
                         f"ミサイル命中: {type(target).__name__} に {hull_dmg:.0f}gj ダメージ"
                     )
+                if target.destroyed:
+                    self._on_report(f"{REPORT_ALERT}{type(target).__name__} 撃沈")

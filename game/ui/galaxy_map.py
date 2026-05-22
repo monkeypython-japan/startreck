@@ -177,6 +177,23 @@ class GalaxyMap:
                 ox, oy = self.world_to_screen(obj.origin)
                 pygame.draw.line(surface, color, (ox, oy), (sx, sy), 1)
 
+    def draw_explosions(self, surface: pygame.Surface, explosions: list) -> None:
+        """爆発エフェクトを描画する。"""
+        now_ms = pygame.time.get_ticks()
+        old_clip = surface.get_clip()
+        surface.set_clip(self.rect)
+        for ex in explosions:
+            elapsed = (now_ms - ex["start_ms"]) / 1000.0
+            t = elapsed / ex["duration"]
+            if t >= 1.0:
+                continue
+            sx, sy = self.world_to_screen(ex["pos"])
+            r = int(ex["max_r"] * (1.0 - t))
+            v = int(255 * (1.0 - t))
+            if r > 0:
+                pygame.draw.circle(surface, (v, v, v), (sx, sy), r)
+        surface.set_clip(old_clip)
+
     # ── メイン描画 ──────────────────────────────────────────────
 
     def draw(self, surface: pygame.Surface, universe: "Universe") -> None:

@@ -9,6 +9,7 @@ class Universe:
         self.time: int = 0
         self._elapsed: float = 0.0
         self._initialized: bool = False  # initialize() が呼ばれた後に True
+        self.recent_explosions: list = []  # UIが毎フレーム読み取り後にクリアする
 
     def add(self, obj: Thing) -> None:
         self.objects.append(obj)
@@ -17,6 +18,11 @@ class Universe:
             obj.universe = self
 
     def remove_destroyed(self) -> None:
+        from game.objects.missile import Missile
+        from game.objects.beam import Beam
+        for o in self.objects:
+            if o.destroyed and not isinstance(o, (Missile, Beam)):
+                self.recent_explosions.append(o.pos)
         self.objects = [o for o in self.objects if not o.destroyed]
 
     def update(self, dt: float) -> None:
