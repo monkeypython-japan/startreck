@@ -38,11 +38,11 @@ class BotCommander(Commander):
         missile_range = self._missile_range()
         beam_range = self._beam_range()
 
-        # 射程内なら攻撃、射程外なら接近
-        if dist <= beam_range:
-            self._attack_beam(enemy_record)
-        elif dist <= missile_range:
+        # ミサイル射程内 → ミサイル、ビーム射程内 → ビーム、射程外 → 接近
+        if dist <= missile_range:
             self._attack_missile(enemy_record)
+        elif dist <= beam_range:
+            self._attack_beam(enemy_record)
         else:
             self._move_toward(enemy_record.pos)
 
