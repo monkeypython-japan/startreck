@@ -2,7 +2,7 @@
 from __future__ import annotations
 import pygame
 from game.coords import Vec2, GRID
-from game.ui.draw_utils import draw_dashed_line, draw_dashed_circle
+from game.ui.draw_utils import draw_dashed_line, draw_dashed_circle, draw_star
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -44,15 +44,18 @@ def _radius_for(obj) -> int:
     from game.objects.star import Star
     from game.objects.base_station import BaseStation
     from game.vessels.special_ship import SpecialShip
+    from game.vessels.heavy_cruiser import HeavyCruiser
     from game.objects.vessel import Vessel
     from game.objects.missile import Missile
     from game.objects.beam import Beam
     if isinstance(obj, Star):
-        return max(3, int(obj.size * 0.8))
+        return max(4, int(obj.size * 1.2))  # 星型表示用の半径
     if isinstance(obj, BaseStation):
         return 7
     if isinstance(obj, SpecialShip):
         return 7
+    if isinstance(obj, HeavyCruiser):
+        return 8  # 二重丸の内円半径
     if isinstance(obj, Vessel):
         return 5
     if isinstance(obj, (Missile, Beam)):
@@ -159,6 +162,7 @@ class GalaxyMap:
     def _draw_objects(self, surface: pygame.Surface, universe: "Universe") -> None:
         from game.objects.vessel import Vessel
         from game.objects.beam import Beam
+        from game.vessels.heavy_cruiser import HeavyCruiser
 
         draw_list = list(universe.objects)
         # 自艦が破壊されて universe から削除されていても常に描画する
@@ -180,7 +184,14 @@ class GalaxyMap:
                 pygame.draw.line(surface, (255, 60, 60), (sx + d, sy - d), (sx - d, sy + d), 3)
                 continue
 
-            pygame.draw.circle(surface, color, (sx, sy), r)
+            from game.objects.star import Star as StarObj
+            if isinstance(obj, StarObj):
+                draw_star(surface, color, sx, sy, r)
+            else:
+                pygame.draw.circle(surface, color, (sx, sy), r)
+            # 旗艦は外側に二重丸を追加
+            if isinstance(obj, HeavyCruiser):
+                pygame.draw.circle(surface, color, (sx, sy), r + 4, 1)
             if obj is self.selected:
                 pygame.draw.circle(surface, HIGHLIGHT_COLOR, (sx, sy), r + 4, 1)
             if isinstance(obj, Vessel) and obj.speed > 0:

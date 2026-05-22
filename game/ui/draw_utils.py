@@ -34,6 +34,27 @@ def draw_dashed_line(
         drawing = not drawing
 
 
+def draw_star(
+    surface: pygame.Surface,
+    color: tuple,
+    cx: int,
+    cy: int,
+    outer_r: int,
+    inner_r: int | None = None,
+) -> None:
+    """5角星を描画する。inner_r 省略時は outer_r * 0.42。"""
+    if outer_r < 2:
+        return
+    if inner_r is None:
+        inner_r = max(1, int(outer_r * 0.42))
+    pts = []
+    for i in range(10):
+        angle = math.pi * i / 5 - math.pi / 2  # 上向きから開始
+        r = outer_r if i % 2 == 0 else inner_r
+        pts.append((int(cx + math.cos(angle) * r), int(cy + math.sin(angle) * r)))
+    pygame.draw.polygon(surface, color, pts)
+
+
 def draw_dashed_circle(
     surface: pygame.Surface,
     color: tuple,
