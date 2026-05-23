@@ -332,8 +332,8 @@ class GameUI:
         else:
             start_label, start_bg = "▶ 再開", (20, 80, 140)
         self._draw_button(self._btn_start, start_label, start_bg)
-        self._draw_button(self._btn_reset, "↺ リセット", (50, 55, 85))
-        self._draw_button(self._btn_quit,  "✕ 終了",     (90, 25, 25))
+        self._draw_button(self._btn_reset, "リセット", (50, 55, 85))
+        self._draw_button(self._btn_quit,  "終了",     (90, 25, 25))
 
     def draw(self) -> None:
         self._collect_messages()
