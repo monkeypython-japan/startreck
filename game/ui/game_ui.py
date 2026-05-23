@@ -24,9 +24,14 @@ RADAR_SIZE = PANEL_W    # レーダービュー: 正方形
 STATUS_Y = RADAR_SIZE + 10
 STATUS_H = 210
 MSG_Y = STATUS_Y + STATUS_H + 8
-MSG_H = WINDOW_H - MSG_Y - 4
+BTN_H = 32              # コントロールバーボタン高さ
+BTN_PAD = 4
+CTRL_Y = WINDOW_H - BTN_H - BTN_PAD  # コントロールバー Y 座標
+MSG_H = CTRL_Y - BTN_PAD - MSG_Y     # メッセージウィンド高さ
 
 BG_COLOR = (6, 6, 14)
+BTN_BORDER = (100, 120, 160)
+BTN_TEXT   = (210, 225, 240)
 
 
 class GameUI:
@@ -63,8 +68,19 @@ class GameUI:
         self._pending: str | None = None  # "jump_select"
         self._explosions: list[dict] = []  # 爆発エフェクトリスト
 
+        # コントロールバー
+        self._game_state: str = "ready"  # "ready" | "running" | "paused"
+        self.reset_requested: bool = False
+        self.quit_requested: bool = False
+        self._btn_font = make_font(13)
+        bw = (PANEL_W - BTN_PAD * 4) // 3
+        bw_last = PANEL_W - BTN_PAD * 4 - bw * 2
+        self._btn_start = pygame.Rect(PANEL_X + BTN_PAD, CTRL_Y, bw, BTN_H)
+        self._btn_reset = pygame.Rect(PANEL_X + BTN_PAD * 2 + bw, CTRL_Y, bw, BTN_H)
+        self._btn_quit  = pygame.Rect(PANEL_X + BTN_PAD * 3 + bw * 2, CTRL_Y, bw_last, BTN_H)
+
         self.message_window.add("U.S.S. YUKIKAZE 出撃準備完了")
-        self.message_window.add("マップをクリックして操作してください")
+        self.message_window.add("▶ スタート ボタンを押してゲーム開始")
 
     # ─── イベント処理 ────────────────────────────────────────
 
@@ -83,7 +99,22 @@ class GameUI:
         elif event.type == pygame.KEYDOWN:
             self._handle_key(event.key)
 
+    @property
+    def is_paused(self) -> bool:
+        return self._game_state != "running"
+
     def _handle_left_click(self, mx: int, my: int) -> None:
+        # コントロールバーボタン
+        if self._btn_start.collidepoint(mx, my):
+            self._on_btn_start()
+            return
+        if self._btn_reset.collidepoint(mx, my):
+            self.reset_requested = True
+            return
+        if self._btn_quit.collidepoint(mx, my):
+            self.quit_requested = True
+            return
+
         # ポップアップ優先
         if self.popup.visible:
             self.popup.handle_click(mx, my)
@@ -131,6 +162,17 @@ class GameUI:
             else:
                 world_pos = self.radar_view.screen_to_world(mx, my)
                 self._show_move_speed_menu(world_pos, mx, my)
+
+    def _on_btn_start(self) -> None:
+        if self._game_state == "ready":
+            self._game_state = "running"
+            self.message_window.add("ゲーム開始")
+        elif self._game_state == "running":
+            self._game_state = "paused"
+            self.message_window.add("一時停止")
+        else:
+            self._game_state = "running"
+            self.message_window.add("再開")
 
     def _handle_key(self, key: int) -> None:
         if key == pygame.K_SPACE:
@@ -275,6 +317,24 @@ class GameUI:
         self._explosions = [e for e in self._explosions
                             if (now_ms - e["start_ms"]) / 1000.0 < e["duration"]]
 
+    def _draw_button(self, rect: pygame.Rect, label: str, bg: tuple) -> None:
+        pygame.draw.rect(self.screen, bg, rect, border_radius=4)
+        pygame.draw.rect(self.screen, BTN_BORDER, rect, 1, border_radius=4)
+        txt = self._btn_font.render(label, True, BTN_TEXT)
+        self.screen.blit(txt, (rect.centerx - txt.get_width() // 2,
+                               rect.centery - txt.get_height() // 2))
+
+    def _draw_controls(self) -> None:
+        if self._game_state == "ready":
+            start_label, start_bg = "▶ スタート", (30, 100, 50)
+        elif self._game_state == "running":
+            start_label, start_bg = "⏸ 一時停止", (110, 90, 20)
+        else:
+            start_label, start_bg = "▶ 再開", (20, 80, 140)
+        self._draw_button(self._btn_start, start_label, start_bg)
+        self._draw_button(self._btn_reset, "↺ リセット", (50, 55, 85))
+        self._draw_button(self._btn_quit,  "✕ 終了",     (90, 25, 25))
+
     def draw(self) -> None:
         self._collect_messages()
         self._collect_explosions()
@@ -285,4 +345,5 @@ class GameUI:
         self.radar_view.draw_explosions(self.screen, self._explosions)
         self.status_panel.draw(self.screen, self.universe, self.player)
         self.message_window.draw(self.screen)
+        self._draw_controls()
         self.popup.draw(self.screen)
