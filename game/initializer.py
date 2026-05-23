@@ -18,10 +18,27 @@ from game.constants import (
 
 SPACE_SIZE = 10.0
 MIN_BASE_SEPARATION = 1.5   # 基地同士の最小距離 (座標単位)
+STAR_GRID_N = 4             # 恒星配置用グリッド (4×4 = 16セル)
 
 
 def _random_pos() -> Vec2:
     return Vec2(random.uniform(0, SPACE_SIZE), random.uniform(0, SPACE_SIZE))
+
+
+def _place_stars_uniform(count: int) -> list[Vec2]:
+    """恒星を宇宙全体に均等分布させる（ジッタードグリッド法）。
+    4×4 グリッドの 16 セルから count 個をランダムに選び、セル内でランダム配置する。
+    """
+    cell = SPACE_SIZE / STAR_GRID_N
+    cells = [(i, j) for i in range(STAR_GRID_N) for j in range(STAR_GRID_N)]
+    random.shuffle(cells)
+    margin = cell * 0.15
+    positions = []
+    for i, j in cells[:count]:
+        x = i * cell + random.uniform(margin, cell - margin)
+        y = j * cell + random.uniform(margin, cell - margin)
+        positions.append(Vec2(x, y))
+    return positions
 
 
 def _random_sector_center() -> Vec2:
@@ -60,10 +77,10 @@ def _place_bases(n: int) -> list[Vec2]:
 def initialize(universe: Universe) -> SpecialShip:
     """宇宙を初期化してプレーヤーの特務艦を返す。"""
 
-    # 恒星 (20〜30個)
+    # 恒星 (10〜15個、均等分布)
     star_count = random.randint(STAR_COUNT_MIN, STAR_COUNT_MAX)
-    for _ in range(star_count):
-        universe.add(Star(_random_pos()))
+    for pos in _place_stars_uniform(star_count):
+        universe.add(Star(pos))
 
     # 連邦基地 (5個、互いに離れたセクタ)
     base_positions = _place_bases(FEDERATION_BASE_COUNT)
