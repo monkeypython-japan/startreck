@@ -3,7 +3,7 @@ from __future__ import annotations
 import math
 import pygame
 from game.coords import Vec2, GRID
-from game.ui.draw_utils import draw_dashed_line, draw_dashed_circle, draw_star
+from game.ui.draw_utils import draw_dashed_line, draw_dashed_circle, draw_star, draw_asterisk
 from game.ui.font_util import make_font
 from typing import TYPE_CHECKING
 
@@ -203,7 +203,7 @@ class RadarView:
 
             from game.objects.star import Star as StarObj
             if isinstance(obj, StarObj):
-                draw_star(surface, color, sx, sy, r)
+                draw_asterisk(surface, color, sx, sy, r)
             else:
                 pygame.draw.circle(surface, color, (sx, sy), r)
             # 旗艦・連邦基地は外側に二重丸を追加

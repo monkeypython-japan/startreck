@@ -34,6 +34,26 @@ def draw_dashed_line(
         drawing = not drawing
 
 
+def draw_asterisk(
+    surface: pygame.Surface,
+    color: tuple,
+    cx: int,
+    cy: int,
+    r: int,
+    width: int = 2,
+) -> None:
+    """米印（8方向アスタリスク）を描画する。"""
+    if r < 2:
+        return
+    for i in range(4):
+        angle = math.pi * i / 4
+        x1 = int(cx + math.cos(angle) * r)
+        y1 = int(cy + math.sin(angle) * r)
+        x2 = int(cx - math.cos(angle) * r)
+        y2 = int(cy - math.sin(angle) * r)
+        pygame.draw.line(surface, color, (x1, y1), (x2, y2), width)
+
+
 def draw_star(
     surface: pygame.Surface,
     color: tuple,

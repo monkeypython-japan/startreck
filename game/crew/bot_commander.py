@@ -110,6 +110,7 @@ class BotCommander(Commander):
         from game.constants import SUPPLY_RANGE
         if distance_grid(self.vessel.pos, supply.pos) <= SUPPLY_RANGE:
             self.vessel.supply_full()
+            self._patrol()
         elif self.vessel.bridge and self.vessel.bridge.navigator:
             self.vessel.bridge.navigator.set_destination(supply.pos, speed=self.vessel.max_speed)
 
