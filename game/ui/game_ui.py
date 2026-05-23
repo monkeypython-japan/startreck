@@ -328,7 +328,7 @@ class GameUI:
         if self._game_state == "ready":
             start_label, start_bg = "▶ スタート", (30, 100, 50)
         elif self._game_state == "running":
-            start_label, start_bg = "⏸ 一時停止", (110, 90, 20)
+            start_label, start_bg = "一時停止", (110, 90, 20)
         else:
             start_label, start_bg = "▶ 再開", (20, 80, 140)
         self._draw_button(self._btn_start, start_label, start_bg)
