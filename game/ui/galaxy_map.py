@@ -219,12 +219,29 @@ class GalaxyMap:
                     ids.add(c.id)
         return ids
 
+    def _enemy_detected_base_ids(self, universe: "Universe") -> set:
+        """敵インテグレータに記録されている味方基地の ID セットを返す。"""
+        from game.objects.vessel import Vessel
+        from game.objects.base_station import BaseStation
+        enemy_faction = "K" if self.player.faction == "U" else "U"
+        result: set = set()
+        for obj in universe.objects:
+            if not isinstance(obj, Vessel) or obj.faction != enemy_faction:
+                continue
+            if not obj.integrator:
+                continue
+            for rec in obj.integrator.query(faction=self.player.faction):
+                if rec.obj_type == "BaseStation":
+                    result.add(rec.id)
+        return result
+
     def _draw_objects(self, surface: pygame.Surface, universe: "Universe") -> None:
         from game.objects.vessel import Vessel
         from game.objects.beam import Beam
         from game.vessels.heavy_cruiser import HeavyCruiser
 
         active_ids = self._active_contact_ids(universe)
+        enemy_detected_base_ids = self._enemy_detected_base_ids(universe)
         # インテグレータフィルタ: 僚艦は常時、敵・中立はインテグレータに記録済みのみ表示
         integrator_ids = (
             set(self.player.integrator.star_map.keys())
@@ -283,6 +300,9 @@ class GalaxyMap:
             )
             if _is_enemy:
                 pygame.draw.circle(surface, (255, 255, 255), (sx, sy), 2)
+            # 敵インテグレータに記録済みの味方基地 (白点)
+            if isinstance(obj, _BS) and obj.faction == self.player.faction and obj.id in enemy_detected_base_ids:
+                pygame.draw.circle(surface, (255, 255, 255), (sx, sy), 2)
             if isinstance(obj, Vessel) and obj.speed > 0:
                 ex = int(sx + obj.heading.x * 16)
                 ey = int(sy + obj.heading.y * 16)
@@ -315,6 +335,22 @@ class GalaxyMap:
             if r > 0:
                 pygame.draw.circle(surface, (v, v, v), (sx, sy), r)
         surface.set_clip(old_clip)
+
+    def _draw_destroyed_bases(self, surface: pygame.Surface, universe: "Universe") -> None:
+        """破壊済み基地を暗い色の四角＋バツ印で描画する。"""
+        for pos, faction in universe.destroyed_bases:
+            sx, sy = self.world_to_screen(pos)
+            if not (self.rect.left - 20 <= sx <= self.rect.right + 20 and
+                    self.rect.top - 20 <= sy <= self.rect.bottom + 20):
+                continue
+            dim = (25, 50, 110) if faction == "U" else (110, 25, 25)
+            x_color = (60, 100, 180) if faction == "U" else (180, 60, 60)
+            r = 7
+            pygame.draw.rect(surface, dim, (sx - r, sy - r, r * 2, r * 2))
+            pygame.draw.rect(surface, dim, (sx - r - 4, sy - r - 4, (r + 4) * 2, (r + 4) * 2), 1)
+            d = r - 1
+            pygame.draw.line(surface, x_color, (sx - d, sy - d), (sx + d, sy + d), 2)
+            pygame.draw.line(surface, x_color, (sx + d, sy - d), (sx - d, sy + d), 2)
 
     def _draw_destination_marker(self, surface: pygame.Surface) -> None:
         """プレーヤー艦の目的地マーカー（十字）と破線を描画する。"""
@@ -350,6 +386,7 @@ class GalaxyMap:
         old_clip = surface.get_clip()
         surface.set_clip(self.rect)
         self._draw_objects(surface, universe)
+        self._draw_destroyed_bases(surface, universe)
         self._draw_destination_marker(surface)
         surface.set_clip(old_clip)
 
