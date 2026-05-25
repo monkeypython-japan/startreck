@@ -215,22 +215,35 @@ class BotCommander(Commander):
         return False
 
     def _reassign_home(self) -> None:
-        """ホームが破壊されたとき、生き残った同種・同勢力のホームに再割り当てする。"""
+        """ホームが破壊されたとき、生き残った同勢力の適切なホームに再割り当てする。"""
         if not self.vessel.universe:
             self.home = None
             return
         from game.objects.base_station import BaseStation
-        from game.objects.vessel import Vessel
         faction = self.vessel.faction
+        pos = self.vessel.pos
         if isinstance(self.home, BaseStation):
+            # 旗艦の場合: 最近傍の味方基地に再割り当て
             candidates = [o for o in self.vessel.universe.objects
                           if isinstance(o, BaseStation) and o.faction == faction]
+            self.home = min(candidates, key=lambda o: distance_grid(pos, o.pos)) if candidates else None
         else:
-            candidates = [o for o in self.vessel.universe.objects
-                          if isinstance(o, Vessel) and o is not self.vessel
-                          and o.faction == faction and o.supply_provider]
-        pos = self.vessel.pos
-        self.home = min(candidates, key=lambda o: distance_grid(pos, o.pos)) if candidates else None
+            # 駆逐艦の場合: 最近傍の味方旗艦の BotFleetCommander に編入リクエストを送る
+            from game.crew.bot_fleet_commander import BotFleetCommander
+            from game.objects.vessel import Vessel
+            candidates = [
+                o for o in self.vessel.universe.objects
+                if isinstance(o, Vessel) and o is not self.vessel
+                and o.faction == faction
+                and o.bridge and isinstance(o.bridge.commander, BotFleetCommander)
+            ]
+            if candidates:
+                nearest = min(candidates, key=lambda o: distance_grid(pos, o.pos))
+                fleet_cmd = nearest.bridge.commander
+                if fleet_cmd.accept_join_request(self.vessel):
+                    self.home = nearest
+            else:
+                self.home = None
 
     def on_flee_evasion_ended(self) -> None:
         """ナビゲーターからの回避行動終了通知。次の tick() で通常行動に戻る。"""

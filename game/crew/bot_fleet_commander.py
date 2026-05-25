@@ -15,6 +15,11 @@ class BotFleetCommander(BotCommander):
     def add_fleet_member(self, vessel: "Vessel") -> None:
         self._fleet.append(vessel)
 
+    def accept_join_request(self, vessel: "Vessel") -> bool:
+        """編入リクエストを受け取り、即座に承認して艦隊に加える。"""
+        self.add_fleet_member(vessel)
+        return True
+
     def tick(self) -> None:
         # 最近傍の敵基地を毎ティック算出し、艦隊全体（自身含む）に割り当て
         base_record = self._nearest_enemy_base_record()

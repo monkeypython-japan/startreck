@@ -256,16 +256,23 @@ class GalaxyMap:
                 continue
 
             from game.objects.star import Star as StarObj
+            from game.objects.base_station import BaseStation as BS
             if isinstance(obj, StarObj):
                 draw_asterisk(surface, color, sx, sy, r)
+            elif isinstance(obj, BS):
+                # 基地は四角で表示
+                pygame.draw.rect(surface, color, (sx - r, sy - r, r * 2, r * 2))
+                pygame.draw.rect(surface, color, (sx - r - 4, sy - r - 4, (r + 4) * 2, (r + 4) * 2), 1)
             else:
                 pygame.draw.circle(surface, color, (sx, sy), r)
-            # 旗艦・連邦基地は外側に二重丸を追加
-            from game.objects.base_station import BaseStation as BS
-            if isinstance(obj, HeavyCruiser) or (isinstance(obj, BS) and obj.faction == "U"):
+            # 旗艦は外側に二重丸を追加
+            if isinstance(obj, HeavyCruiser):
                 pygame.draw.circle(surface, color, (sx, sy), r + 4, 1)
             if obj is self.selected:
-                pygame.draw.circle(surface, HIGHLIGHT_COLOR, (sx, sy), r + 4, 1)
+                if isinstance(obj, BS):
+                    pygame.draw.rect(surface, HIGHLIGHT_COLOR, (sx - r - 4, sy - r - 4, (r + 4) * 2, (r + 4) * 2), 1)
+                else:
+                    pygame.draw.circle(surface, HIGHLIGHT_COLOR, (sx, sy), r + 4, 1)
             # アクティブレーダー捕捉中の印 (白点) — 敵オブジェクトのみ
             from game.objects.star import Star as _Star
             from game.objects.base_station import BaseStation as _BS
