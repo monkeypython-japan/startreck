@@ -1,14 +1,16 @@
 """ナビゲーター: 移動目標への航行・回避機動を担当。"""
 from __future__ import annotations
 import math
-from game.coords import Vec2, distance_grid, direction_to, wrap_vec
+from game.coords import Vec2, GRID, displacement, distance_grid, direction_to, wrap_vec
 from game.crew.bridge_crew import BridgeCrew
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from game.objects.vessel import Vessel
 
-ARRIVAL_THRESHOLD = 20.0  # grid  これ以内に入ったら到着とみなす
+ARRIVAL_THRESHOLD = 20.0   # grid  これ以内に入ったら到着とみなす
+SEPARATION_DIST = 10.0     # grid  この距離を下回ると強制回避
+SEPARATION_ZONE = 30.0     # grid  進路前方の回避チェック範囲
 
 
 class Navigator(BridgeCrew):
@@ -63,6 +65,43 @@ class Navigator(BridgeCrew):
             self.report("目的地に到着")
         else:
             self.vessel.set_heading_to(self.destination)
+            self._separation_steer()
+
+    def _separation_steer(self) -> None:
+        """近傍・進路前方の艦艇から離れるよう heading を微調整する。"""
+        if not self.vessel.radar or self.vessel.speed == 0.0:
+            return
+        from game.objects.vessel import Vessel as _V
+        sx, sy = 0.0, 0.0
+        for contact in self.vessel.radar.contacts:
+            if not isinstance(contact, _V):
+                continue
+            disp = displacement(self.vessel.pos, contact.pos)
+            d_coord = math.hypot(disp.x, disp.y)
+            if d_coord < 1e-6:
+                continue
+            d_grid = d_coord / GRID
+            nx, ny = disp.x / d_coord, disp.y / d_coord
+            if d_grid < SEPARATION_DIST:
+                force = (SEPARATION_DIST - d_grid) / SEPARATION_DIST * 2.0
+                sx -= nx * force
+                sy -= ny * force
+            elif d_grid < SEPARATION_ZONE:
+                fwd = self.vessel.heading.x * nx + self.vessel.heading.y * ny
+                if fwd > 0.6:
+                    force = (SEPARATION_ZONE - d_grid) / SEPARATION_ZONE * fwd * 0.5
+                    sx -= nx * force
+                    sy -= ny * force
+        if math.hypot(sx, sy) < 0.001:
+            return
+        hx = self.vessel.heading.x + sx
+        hy = self.vessel.heading.y + sy
+        mag = math.hypot(hx, hy)
+        if mag < 0.001:
+            # heading と反発力が正反対で打ち消された場合は直角方向へ回避
+            self.vessel.heading = Vec2(-self.vessel.heading.y, self.vessel.heading.x)
+        else:
+            self.vessel.heading = Vec2(hx / mag, hy / mag)
 
     def _check_evasion_end(self) -> None:
         """レーダーに自艦を狙うミサイルがなくなったら回避終了。"""

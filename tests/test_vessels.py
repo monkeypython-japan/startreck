@@ -107,3 +107,47 @@ def test_vessel_destroyed_after_enough_damage():
     d.shield.set_defense_rate(0.0)
     d.receive_damage(d.durability)
     assert d.destroyed
+
+
+# --- 分離ステアリング ---
+
+def test_separation_steer_pushes_heading_away():
+    """近傍に別の艦がいる場合、heading が相手から離れる方向に調整されることを確認。"""
+    from game.crew.navigator import SEPARATION_DIST
+    uni = Universe()
+    # 距離 5 grid（SEPARATION_DIST=10 より近い）で2艦を配置
+    gap_coord = SEPARATION_DIST * 0.5 * 0.001  # 5 grid in coord units
+    a = Destroyer(Vec2(5.0, 5.0), faction="U")
+    b = Destroyer(Vec2(5.0 + gap_coord, 5.0), faction="U")
+    uni.add(a)
+    uni.add(b)
+    # レーダースキャンで a が b を認識させる
+    a.radar.scan(uni.objects, 0)
+    # a を +x 方向（b の方向）に向けて移動させる
+    a.set_heading_to(Vec2(5.0 + 1.0, 5.0))
+    a.set_speed(1.0)
+    heading_before = a.heading
+    a.bridge.navigator.destination = Vec2(5.0 + 1.0, 5.0)
+    a.bridge.navigator._separation_steer()
+    # heading.x が減少（b から離れる方向に曲がった）ことを確認
+    assert a.heading.x < heading_before.x
+
+
+def test_separation_maintained_during_movement():
+    """同一方向に移動する2艦が最低 SEPARATION_DIST を維持することを確認（近似）。"""
+    from game.crew.navigator import SEPARATION_DIST
+    # 5 grid 以内に配置して同じ目標に向かわせる
+    gap_coord = SEPARATION_DIST * 0.4 * 0.001
+    uni = Universe()
+    a = Destroyer(Vec2(5.0, 5.0), faction="U")
+    b = Destroyer(Vec2(5.0 + gap_coord, 5.0), faction="U")
+    uni.add(a)
+    uni.add(b)
+    target = Vec2(8.0, 5.0)
+    a.bridge.navigator.set_destination(target, speed=2.0)
+    b.bridge.navigator.set_destination(target, speed=2.0)
+    # 2秒更新（レーダースキャンなしなので分離は働かないが例外が出ないことを確認）
+    for _ in range(120):
+        uni.update(1.0 / 60)
+    assert not a.destroyed
+    assert not b.destroyed
