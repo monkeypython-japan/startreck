@@ -112,10 +112,29 @@ def test_victory_none_before_initialize():
 
 
 def test_base_separation():
-    """連邦基地が互いに離れて配置されることを確認。"""
+    """同一勢力の基地が 3000 grid 以上離れて配置されることを確認。"""
+    from game.coords import distance_grid
+    uni, _ = build_universe()
+    for faction in ("U", "K"):
+        bases = [o for o in uni.objects if isinstance(o, BaseStation) and o.faction == faction]
+        for i, a in enumerate(bases):
+            for b in bases[i + 1:]:
+                assert distance_grid(a.pos, b.pos) >= 3000.0, (
+                    f"{faction}基地の間隔不足: {distance_grid(a.pos, b.pos):.0f} grid"
+                )
+
+
+def test_federation_bases_in_left_half():
+    """連邦基地が x セクタ 0〜4 (x < 5.0) に配置されることを確認。"""
     uni, _ = build_universe()
     bases = [o for o in uni.objects if isinstance(o, BaseStation) and o.faction == "U"]
-    for i, a in enumerate(bases):
-        for b in bases[i + 1:]:
-            dist = abs(a.pos.x - b.pos.x) + abs(a.pos.y - b.pos.y)
-            assert dist >= 1.0  # MIN_BASE_SEPARATION より離れている
+    for b in bases:
+        assert b.pos.x < 5.0, f"連邦基地が右半分に配置された: x={b.pos.x}"
+
+
+def test_klingon_bases_in_right_half():
+    """クリンゴン基地が x セクタ 5〜9 (x >= 5.0) に配置されることを確認。"""
+    uni, _ = build_universe()
+    bases = [o for o in uni.objects if isinstance(o, BaseStation) and o.faction == "K"]
+    for b in bases:
+        assert b.pos.x >= 5.0, f"クリンゴン基地が左半分に配置された: x={b.pos.x}"

@@ -16,7 +16,7 @@ from game.constants import (
 )
 
 SPACE_SIZE = 10.0
-MIN_BASE_SEPARATION = 1.5   # 基地同士の最小距離 (座標単位)
+MIN_BASE_SEPARATION = 3000.0  # grid  基地同士の最小距離
 STAR_GRID_N = 4             # 恒星配置用グリッド (4×4 = 16セル)
 
 
@@ -58,18 +58,26 @@ def _orbit_positions(center: Vec2, radius_grid: float, count: int) -> list[Vec2]
     ]
 
 
-def _place_bases(n: int) -> list[Vec2]:
-    """基地を互いに MIN_BASE_SEPARATION 以上離れた位置に配置する。"""
+def _place_bases(
+    n: int,
+    x_sector_min: int,
+    x_sector_max: int,
+) -> list[Vec2]:
+    """指定 x セクタ範囲内に、同勢力基地と MIN_BASE_SEPARATION grid 以上離して基地を配置する。"""
     positions: list[Vec2] = []
-    attempts = 0
-    while len(positions) < n and attempts < 1000:
-        attempts += 1
-        candidate = _random_sector_center()
-        if all(
-            abs(candidate.x - p.x) + abs(candidate.y - p.y) >= MIN_BASE_SEPARATION
-            for p in positions
-        ):
-            positions.append(candidate)
+    all_sectors = [
+        Vec2(sx + 0.5, sy + 0.5)
+        for sx in range(x_sector_min, x_sector_max + 1)
+        for sy in range(10)
+    ]
+    for _ in range(200):
+        random.shuffle(all_sectors)
+        positions = []
+        for c in all_sectors:
+            if all(distance_grid(c, p) >= MIN_BASE_SEPARATION for p in positions):
+                positions.append(c)
+                if len(positions) == n:
+                    return positions
     return positions
 
 
@@ -124,16 +132,16 @@ def initialize(universe: Universe) -> SpecialShip:
     for pos in _place_stars_uniform(star_count):
         universe.add(Star(pos))
 
-    # 連邦基地 (5個)
-    fed_base_positions = _place_bases(BASE_COUNT)
+    # 連邦基地 (5個、x セクタ 0〜4)
+    fed_base_positions = _place_bases(BASE_COUNT, x_sector_min=0, x_sector_max=4)
     fed_bases: list[BaseStation] = []
     for pos in fed_base_positions:
         base = BaseStation(pos, faction="U")
         universe.add(base)
         fed_bases.append(base)
 
-    # クリンゴン基地 (5個)
-    kl_base_positions = _place_bases(BASE_COUNT)
+    # クリンゴン基地 (5個、x セクタ 5〜9)
+    kl_base_positions = _place_bases(BASE_COUNT, x_sector_min=5, x_sector_max=9)
     kl_bases: list[BaseStation] = []
     for pos in kl_base_positions:
         base = BaseStation(pos, faction="K")
