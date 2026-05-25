@@ -225,7 +225,17 @@ class GalaxyMap:
         from game.vessels.heavy_cruiser import HeavyCruiser
 
         active_ids = self._active_contact_ids(universe)
-        draw_list = list(universe.objects)
+        # インテグレータフィルタ: 僚艦は常時、敵・中立はインテグレータに記録済みのみ表示
+        integrator_ids = (
+            set(self.player.integrator.star_map.keys())
+            if self.player.integrator else set()
+        )
+        player_faction = self.player.faction
+        draw_list = []
+        for obj in universe.objects:
+            obj_faction = getattr(obj, "faction", "")
+            if obj_faction == player_faction or obj.id in integrator_ids:
+                draw_list.append(obj)
         # 自艦が破壊されて universe から削除されていても常に描画する
         if self.player not in draw_list:
             draw_list.append(self.player)
