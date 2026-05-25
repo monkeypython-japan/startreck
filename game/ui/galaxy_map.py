@@ -2,7 +2,7 @@
 from __future__ import annotations
 import pygame
 from game.coords import Vec2, GRID
-from game.ui.draw_utils import draw_dashed_line, draw_dashed_circle, draw_star, draw_asterisk
+from game.ui.draw_utils import draw_dashed_line, draw_dashed_circle, draw_star, draw_asterisk, draw_wavy_line
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -316,6 +316,30 @@ class GalaxyMap:
                 pygame.draw.circle(surface, (v, v, v), (sx, sy), r)
         surface.set_clip(old_clip)
 
+    def _draw_destination_marker(self, surface: pygame.Surface) -> None:
+        """プレーヤー艦の目的地マーカー（十字）と破線を描画する。"""
+        nav = self.player.bridge.navigator if self.player.bridge else None
+        if not nav or not nav.destination:
+            return
+        dx, dy = self.world_to_screen(nav.destination)
+        if not self.rect.collidepoint(dx, dy):
+            return
+        px, py = self.world_to_screen(self.player.pos)
+        # 破線 (半透明オーバーレイ)
+        overlay = pygame.Surface((self.rect.width, self.rect.height), pygame.SRCALPHA)
+        draw_dashed_line(
+            overlay, (80, 160, 255, 80),
+            (px - self.rect.left, py - self.rect.top),
+            (dx - self.rect.left, dy - self.rect.top),
+            dash=6, gap=4,
+        )
+        surface.blit(overlay, self.rect.topleft)
+        # 十字マーカー
+        s = 5
+        color = (80, 180, 255)
+        pygame.draw.line(surface, color, (dx - s, dy), (dx + s, dy), 1)
+        pygame.draw.line(surface, color, (dx, dy - s), (dx, dy + s), 1)
+
     # ── メイン描画 ──────────────────────────────────────────────
 
     def draw(self, surface: pygame.Surface, universe: "Universe") -> None:
@@ -326,6 +350,7 @@ class GalaxyMap:
         old_clip = surface.get_clip()
         surface.set_clip(self.rect)
         self._draw_objects(surface, universe)
+        self._draw_destination_marker(surface)
         surface.set_clip(old_clip)
 
         pygame.draw.rect(surface, (60, 60, 80), self.rect, 1)

@@ -224,7 +224,15 @@ class GameUI:
                 MenuItem("この目標へ移動", lambda o=obj: self._show_move_speed_menu(o.pos, mx, my)),
             ]
 
-        elif isinstance(obj, BaseStation) and obj.faction == "U":
+        elif isinstance(obj, BaseStation) and obj.faction != self.player.faction:
+            has_missile = bool(self.player.missile_launcher and self.player.missile_launcher.stock > 0)
+            items = [
+                MenuItem("ミサイル攻撃", lambda o=obj: self._cmd_missile(o), has_missile),
+                MenuItem("ビーム攻撃", lambda o=obj: self._cmd_beam(o)),
+                MenuItem("この基地へ移動", lambda o=obj: self._show_move_speed_menu(o.pos, mx, my)),
+            ]
+
+        elif isinstance(obj, BaseStation) and obj.faction == self.player.faction:
             ready = (self.player.jump_drive is not None and
                      self.player.generator is not None and
                      self.player.generator.capacitor >= self.player.jump_drive.required_energy)

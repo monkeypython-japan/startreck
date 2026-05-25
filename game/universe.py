@@ -56,6 +56,7 @@ class Universe:
     def _sync_fleet_integrators(self) -> None:
         """フリートインテグレータ同期: 僚艦データの共有と破壊済みレコードの除去。"""
         from game.objects.vessel import Vessel
+        from game.objects.base_station import BaseStation
         from game.objects.star import Star
         active_ids = {obj.id for obj in self.objects}
         stars = [o for o in self.objects if isinstance(o, Star)]
@@ -64,6 +65,16 @@ class Universe:
         faction_enemy_contacts: dict[str, dict[str, "Thing"]] = {}
         for obj in self.objects:
             if isinstance(obj, Vessel) and obj.radar:
+                f = obj.faction
+                if f not in faction_enemy_contacts:
+                    faction_enemy_contacts[f] = {}
+                for contact in obj.radar.contacts:
+                    if getattr(contact, "faction", "") != f:
+                        faction_enemy_contacts[f][contact.id] = contact
+        # 基地レーダースキャン: 探知した敵を勢力共有インテルに追加
+        for obj in self.objects:
+            if isinstance(obj, BaseStation):
+                obj.radar.scan(self.objects, self.time)
                 f = obj.faction
                 if f not in faction_enemy_contacts:
                     faction_enemy_contacts[f] = {}

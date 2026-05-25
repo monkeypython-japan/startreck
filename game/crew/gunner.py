@@ -72,13 +72,25 @@ class Gunner(BridgeCrew):
         if target.destroyed:
             self._attack_queue.pop(0)
             return
+        from game.coords import distance_grid
+        dist = distance_grid(self.vessel.pos, target.pos)
         uni = self.vessel.universe
         if weapon == "missile" and self.vessel.missile_launcher:
+            max_range = self.vessel.missile_launcher.missile_range
+            if dist > max_range:
+                self.vessel._report(f"ミサイル射程外 ({dist:.0f} / {max_range:.0f} grid)")
+                self._attack_queue.pop(0)
+                return
             m = self.vessel.missile_launcher.fire(target, self.vessel.radar)
             if m and uni:
                 uni.add(m)
             self._attack_queue.pop(0)
         elif weapon == "beam" and self.vessel.beam_launcher and self.vessel.generator:
+            max_range = self.vessel.beam_launcher.beam_range
+            if dist > max_range:
+                self.vessel._report(f"ビーム射程外 ({dist:.0f} / {max_range:.0f} grid)")
+                self._attack_queue.pop(0)
+                return
             b = self.vessel.beam_launcher.fire(target.pos, self.vessel.generator)
             if b and uni:
                 uni.add(b)
