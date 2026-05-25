@@ -256,8 +256,15 @@ class GalaxyMap:
                 pygame.draw.circle(surface, color, (sx, sy), r + 4, 1)
             if obj is self.selected:
                 pygame.draw.circle(surface, HIGHLIGHT_COLOR, (sx, sy), r + 4, 1)
-            # アクティブレーダー捕捉中の印 (白点)
-            if obj.id in active_ids:
+            # アクティブレーダー捕捉中の印 (白点) — 敵オブジェクトのみ
+            from game.objects.star import Star as _Star
+            from game.objects.base_station import BaseStation as _BS
+            _is_enemy = (
+                obj.id in active_ids
+                and not isinstance(obj, _Star)
+                and not (isinstance(obj, (Vessel, _BS)) and obj.faction == self.player.faction)
+            )
+            if _is_enemy:
                 pygame.draw.circle(surface, (255, 255, 255), (sx, sy), 2)
             if isinstance(obj, Vessel) and obj.speed > 0:
                 ex = int(sx + obj.heading.x * 16)
