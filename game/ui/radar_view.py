@@ -75,18 +75,27 @@ def _get_sector_font() -> pygame.font.Font:
 class RadarView:
     """レーダー範囲をビュー全体に写像したズームビュー。背景は白。"""
 
+    ZOOM_MIN = 1.0
+    ZOOM_MAX = 3.0
+    ZOOM_STEP = 0.25
+
     def __init__(self, rect: pygame.Rect, player: "SpecialShip") -> None:
         self.rect = rect
         self.player = player
         self.selected: "Thing | None" = None
+        self._zoom: float = 1.0
+
+    def handle_wheel(self, dy: int) -> None:
+        """マウスホイール操作でズームを変更する（上方向で拡大）。"""
+        self._zoom = max(self.ZOOM_MIN, min(self.ZOOM_MAX, self._zoom + dy * self.ZOOM_STEP))
 
     @property
     def _scale(self) -> float:
-        """px per 座標単位。レーダーレンジがビュー半幅に対応。"""
+        """px per 座標単位。レーダーレンジ / ズーム倍率がビュー半幅に対応。"""
         if self.player.radar is None:
             return 50.0
         radar_units = self.player.radar.scan_range * GRID
-        return (self.rect.width / 2) / radar_units
+        return (self.rect.width / 2) / radar_units * self._zoom
 
     # ── 座標変換 ────────────────────────────────────────────────
 

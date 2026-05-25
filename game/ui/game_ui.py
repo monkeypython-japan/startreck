@@ -93,7 +93,9 @@ class GameUI:
 
         elif event.type == pygame.MOUSEWHEEL:
             mx, my = pygame.mouse.get_pos()
-            if pygame.Rect(PANEL_X, MSG_Y, PANEL_W, MSG_H).collidepoint(mx, my):
+            if self.radar_view.rect.collidepoint(mx, my):
+                self.radar_view.handle_wheel(event.y)
+            elif pygame.Rect(PANEL_X, MSG_Y, PANEL_W, MSG_H).collidepoint(mx, my):
                 self.message_window.scroll(-event.y * 20)
 
         elif event.type == pygame.KEYDOWN:

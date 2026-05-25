@@ -27,13 +27,18 @@ class BeamLauncher(Equipment):
         self.beam_speed: float = beam_speed
         self.beam_range: float = beam_range  # grid
         self._on_report: Callable[[str], None] | None = on_report
+        self._active_beam: "Beam | None" = None
 
     @property
     def required_energy(self) -> float:
         return self.beam_power * BEAM_ENERGY_COST_RATE
 
     def fire(self, target_pos, generator: "Generator") -> "Beam | None":
-        """ビームを発射して Beam オブジェクトを返す。エネルギー不足なら None。"""
+        """ビームを発射して Beam オブジェクトを返す。前のビーム飛行中・エネルギー不足なら None。"""
+        if self._active_beam is not None and not self._active_beam.destroyed:
+            if self._on_report:
+                self._on_report("ビーム発射不可: 前のビームが飛行中")
+            return None
         if not generator.consume_energy(self.required_energy):
             if self._on_report:
                 self._on_report("ビーム発射不可: エネルギー不足")
@@ -50,6 +55,7 @@ class BeamLauncher(Equipment):
             owner=self.owner,
             on_report=self._on_report,
         )
+        self._active_beam = b
         if self._on_report:
             self._on_report(f"ビーム発射 消費:{self.required_energy:.0f}gj")
         return b

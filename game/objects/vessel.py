@@ -64,6 +64,7 @@ class Vessel(Mover):
         beam_power: float,
         beam_speed: float,
         beam_range: float,
+        missile_reload_time: float = 0.0,
     ) -> None:
         from game.equipment.generator import Generator
         from game.equipment.shield import Shield
@@ -84,7 +85,8 @@ class Vessel(Mover):
         self.missile_launcher = MissileLauncher(
             self, capacity=missile_capacity, iff=self.faction,
             missile_power=missile_power, missile_speed=missile_speed,
-            missile_flight_time=missile_flight_time, on_report=self._report,
+            missile_flight_time=missile_flight_time,
+            reload_time=missile_reload_time, on_report=self._report,
         )
         self.beam_launcher = BeamLauncher(
             self, iff=self.faction,
@@ -141,6 +143,8 @@ class Vessel(Mover):
             if self.bridge.gunner:
                 self.bridge.gunner.update(dt)
         super().update(dt)
+        if self.missile_launcher:
+            self.missile_launcher.update(dt)
         if self.generator:
             self.generator.update(dt)
         if self.shield and self.generator:

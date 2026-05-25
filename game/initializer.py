@@ -88,13 +88,20 @@ def _place_faction_fleet(
     from game.crew.gunner import Gunner
 
     flagships: list[HeavyCruiser] = []
-    for _ in range(FLEET_COUNT):
-        flagship_pos = _random_sector_center()
+    for i in range(FLEET_COUNT):
+        # 艦隊は対応する基地の近傍に配置（ラウンドロビンで基地を割り当て）
+        home_base = bases[i % len(bases)]
+        angle = random.uniform(0, 2 * math.pi)
+        r = FLEET_ORBIT_RADIUS * 2 * GRID
+        flagship_pos = wrap_vec(Vec2(
+            home_base.pos.x + math.cos(angle) * r,
+            home_base.pos.y + math.sin(angle) * r,
+        ))
         flagship = HeavyCruiser(flagship_pos, faction=faction)
 
-        # BotFleetCommander に差し替え
+        # BotFleetCommander に差し替え（ホームは割り当て基地）
         fleet_cmd = BotFleetCommander(flagship)
-        fleet_cmd.set_home(_nearest_base(flagship_pos, bases))
+        fleet_cmd.set_home(home_base)
         flagship.bridge.commander = fleet_cmd
 
         orbit_positions = _orbit_positions(flagship_pos, FLEET_ORBIT_RADIUS, FLEET_SIZE)
