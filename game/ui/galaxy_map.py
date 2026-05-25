@@ -72,13 +72,53 @@ class GalaxyMap:
         self.selected: "Thing | None" = None
         # 1 座標単位 = rect.width / 10 px
         self._scale: float = rect.width / 10.0
+        # ジャンプスクロールアニメーション
+        self._anim_offset: "Vec2 | None" = None   # 現在の表示オフセット (player.pos への加算値)
+        self._anim_from: "Vec2 | None" = None     # 開始オフセット
+        self._anim_elapsed: float = 0.0
+        self._anim_duration: float = 0.5
+
+    # ── アニメーション ───────────────────────────────────────────
+
+    def start_jump_anim(self, from_pos: Vec2, to_pos: Vec2) -> None:
+        """ジャンプスクロールアニメーションを開始する。"""
+        dx = from_pos.x - to_pos.x
+        dy = from_pos.y - to_pos.y
+        if dx > 5.0: dx -= 10.0
+        elif dx < -5.0: dx += 10.0
+        if dy > 5.0: dy -= 10.0
+        elif dy < -5.0: dy += 10.0
+        offset = Vec2(dx, dy)
+        self._anim_from = offset
+        self._anim_offset = offset
+        self._anim_elapsed = 0.0
+
+    def update(self, dt: float) -> None:
+        if self._anim_offset is None:
+            return
+        self._anim_elapsed += dt
+        t = min(1.0, self._anim_elapsed / self._anim_duration)
+        if t >= 1.0:
+            self._anim_offset = None
+            self._anim_from = None
+        else:
+            factor = 1.0 - t
+            self._anim_offset = Vec2(
+                self._anim_from.x * factor,
+                self._anim_from.y * factor,
+            )
 
     # ── 座標変換 ────────────────────────────────────────────────
 
     def world_to_screen(self, pos: Vec2) -> tuple[int, int]:
         """ラッピングを考慮してプレーヤー中心のスクリーン座標へ変換。"""
-        dx = pos.x - self.player.pos.x
-        dy = pos.y - self.player.pos.y
+        if self._anim_offset:
+            cx = self.player.pos.x + self._anim_offset.x
+            cy = self.player.pos.y + self._anim_offset.y
+        else:
+            cx, cy = self.player.pos.x, self.player.pos.y
+        dx = pos.x - cx
+        dy = pos.y - cy
         if dx > 5.0: dx -= 10.0
         elif dx < -5.0: dx += 10.0
         if dy > 5.0: dy -= 10.0
@@ -112,7 +152,11 @@ class GalaxyMap:
 
     def _draw_grid(self, surface: pygame.Surface) -> None:
         """破線のセクタグリッドを描画する。"""
-        px, py = self.player.pos.x, self.player.pos.y
+        if self._anim_offset:
+            px = self.player.pos.x + self._anim_offset.x
+            py = self.player.pos.y + self._anim_offset.y
+        else:
+            px, py = self.player.pos.x, self.player.pos.y
         w, h = self.rect.width, self.rect.height
         # SRCALPHA サーフェスに半透明で描画してから blit
         gs = pygame.Surface((w, h), pygame.SRCALPHA)
@@ -135,6 +179,8 @@ class GalaxyMap:
         surface.blit(gs, self.rect.topleft)
 
     def _draw_range_circles(self, surface: pygame.Surface) -> None:
+        if self._anim_offset is not None:
+            return  # アニメーション中は射程円を非表示
         """射程範囲の半透明円とレーダー破線円をプレーヤー中心に描画する。"""
         cx, cy = self.rect.centerx, self.rect.centery
         overlay = pygame.Surface((self.rect.width, self.rect.height), pygame.SRCALPHA)
@@ -159,11 +205,26 @@ class GalaxyMap:
             r_px = int(self.player.radar.scan_range * GRID * self._scale)
             draw_dashed_circle(surface, RADAR_RING_COLOR, (cx, cy), r_px, dash=8, gap=5)
 
+    def _active_contact_ids(self, universe: "Universe") -> set:
+        """自艦・僚艦のレーダーに現在捕捉されているオブジェクトの ID セットを返す。"""
+        ids: set = set()
+        if self.player.radar:
+            for c in self.player.radar.contacts:
+                ids.add(c.id)
+        from game.objects.vessel import Vessel
+        for obj in universe.objects:
+            if (isinstance(obj, Vessel) and obj.faction == self.player.faction
+                    and obj is not self.player and obj.radar):
+                for c in obj.radar.contacts:
+                    ids.add(c.id)
+        return ids
+
     def _draw_objects(self, surface: pygame.Surface, universe: "Universe") -> None:
         from game.objects.vessel import Vessel
         from game.objects.beam import Beam
         from game.vessels.heavy_cruiser import HeavyCruiser
 
+        active_ids = self._active_contact_ids(universe)
         draw_list = list(universe.objects)
         # 自艦が破壊されて universe から削除されていても常に描画する
         if self.player not in draw_list:
@@ -195,6 +256,9 @@ class GalaxyMap:
                 pygame.draw.circle(surface, color, (sx, sy), r + 4, 1)
             if obj is self.selected:
                 pygame.draw.circle(surface, HIGHLIGHT_COLOR, (sx, sy), r + 4, 1)
+            # アクティブレーダー捕捉中の印 (白点)
+            if obj.id in active_ids:
+                pygame.draw.circle(surface, (255, 255, 255), (sx, sy), 2)
             if isinstance(obj, Vessel) and obj.speed > 0:
                 ex = int(sx + obj.heading.x * 16)
                 ey = int(sy + obj.heading.y * 16)
