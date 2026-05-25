@@ -23,6 +23,7 @@ class JumpDrive(Equipment):
         super().__init__(owner)
         self.capacitor_max: float = capacitor_max
         self._on_report: Callable[[str], None] | None = on_report
+        self.jump_origin: Vec2 | None = None  # UI がアニメーション開始後に None に戻す
 
     @property
     def required_energy(self) -> float:
@@ -35,6 +36,7 @@ class JumpDrive(Equipment):
                 self._on_report("ジャンプ不可: エネルギー不足")
             return False
         generator.consume_energy(self.required_energy)
+        self.jump_origin = Vec2(self.owner.pos.x, self.owner.pos.y)
         angle = random.uniform(0, 2 * math.pi)
         radius = JUMP_LANDING_RADIUS * GRID
         dx = math.cos(angle) * radius

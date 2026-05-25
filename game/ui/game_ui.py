@@ -297,6 +297,20 @@ class GameUI:
             ok = self.player.jump_drive.jump(base, self.player.generator)
             self.message_window.add("ジャンプ実行!" if ok else "ジャンプ失敗: エネルギー不足")
 
+    # ─── 更新 ──────────────────────────────────────────────────
+
+    def update(self, dt: float) -> None:
+        """UIアニメーションを更新する（ポーズ中も呼び出す）。"""
+        # ジャンプ検知 → スクロールアニメーション開始
+        if self.player.jump_drive and self.player.jump_drive.jump_origin is not None:
+            from game.coords import Vec2
+            self.galaxy_map.start_jump_anim(
+                self.player.jump_drive.jump_origin,
+                self.player.pos,
+            )
+            self.player.jump_drive.jump_origin = None
+        self.galaxy_map.update(dt)
+
     # ─── 描画 ──────────────────────────────────────────────────
 
     def _collect_messages(self) -> None:

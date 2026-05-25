@@ -35,6 +35,7 @@ def _run_game(screen: pygame.Surface, clock: pygame.time.Clock) -> str:
         if not ui.is_paused:
             universe.update(dt)
 
+        ui.update(dt)
         ui.draw()
         pygame.display.flip()
 
