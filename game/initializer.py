@@ -120,4 +120,6 @@ def initialize(universe: Universe) -> SpecialShip:
     universe.add(player_ship)
 
     universe._initialized = True
+    # 恒星・僚艦の初期インテグレータ登録 (最初のティック前に確定させる)
+    universe._sync_fleet_integrators()
     return player_ship
