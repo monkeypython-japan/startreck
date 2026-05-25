@@ -125,12 +125,10 @@ class StatusPanel:
         y += 5
 
         from game.objects.base_station import BaseStation
-        from game.objects.vessel import Vessel
         fed_bases = sum(1 for o in universe.objects if isinstance(o, BaseStation) and o.faction == "U")
-        klingons = sum(1 for o in universe.objects if isinstance(o, Vessel) and o.faction == "K")
-        screen.blit(
-            self.font.render(f"Fed Bases: {fed_bases}    Klingons: {klingons}", True, VALUE_COLOR),
-            (x, y),
-        )
+        kli_bases = sum(1 for o in universe.objects if isinstance(o, BaseStation) and o.faction == "K")
+        screen.blit(self.font.render(f"Fed Bases: {fed_bases}", True, (80, 140, 255)), (x, y))
+        y += LINE_H
+        screen.blit(self.font.render(f"Kli Bases: {kli_bases}", True, (255, 80, 80)), (x, y))
 
         pygame.draw.rect(screen, PANEL_BORDER, self.rect, 1)

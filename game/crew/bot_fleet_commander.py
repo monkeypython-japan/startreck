@@ -20,12 +20,16 @@ class BotFleetCommander(BotCommander):
         self.add_fleet_member(vessel)
         return True
 
-    def tick(self) -> None:
-        # 最近傍の敵基地を毎ティック算出し、艦隊全体（自身含む）に割り当て
+    def update_fleet_target(self) -> None:
+        """インテグレータの最新情報をもとに艦隊全体の攻撃目標を即時更新する。
+        インテグレータ更新直後（敵基地新規発見時など）に呼ばれる。"""
         base_record = self._nearest_enemy_base_record()
         target_base_id = base_record.id if base_record else None
         self.set_attack_target(target_base_id)
         for member in self._fleet:
             if not member.destroyed and member.bridge and member.bridge.commander:
                 member.bridge.commander.set_attack_target(target_base_id)
+
+    def tick(self) -> None:
+        self.update_fleet_target()
         super().tick()
