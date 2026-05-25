@@ -2,7 +2,7 @@
 from __future__ import annotations
 from game.coords import Vec2, distance_grid, direction_to, wrap_vec
 from game.crew.commander import Commander
-from game.constants import BOT_RETREAT_DAMAGE_RATE
+from game.constants import BOT_EVADE_DAMAGE_RATE, BOT_RETREAT_DAMAGE_RATE
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -36,6 +36,17 @@ class BotCommander(Commander):
         if self.vessel.damage >= self.vessel.durability * BOT_RETREAT_DAMAGE_RATE:
             self._retreat()
             return
+
+        # 中破時は回避行動
+        nav = self.vessel.bridge.navigator if self.vessel.bridge else None
+        if self.vessel.damage >= self.vessel.durability * BOT_EVADE_DAMAGE_RATE:
+            if nav and not nav._flee_evading:
+                nav.start_flee_evasion()
+            return
+
+        # 回避行動中だが閾値を下回った場合（補給後）は回避を解除
+        if nav and nav._flee_evading:
+            nav.end_flee_evasion()
 
         # 最近傍の敵を探す
         enemy_record = self._nearest_enemy()
@@ -165,6 +176,10 @@ class BotCommander(Commander):
                           and o.faction == faction and o.supply_provider]
         pos = self.vessel.pos
         self.home = min(candidates, key=lambda o: distance_grid(pos, o.pos)) if candidates else None
+
+    def on_flee_evasion_ended(self) -> None:
+        """ナビゲーターからの回避行動終了通知。次の tick() で通常行動に戻る。"""
+        pass
 
     def _patrol(self) -> None:
         """敵不在時はホームから離れる方向に最大速度で索敵移動する。"""
