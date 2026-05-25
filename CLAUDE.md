@@ -3,7 +3,7 @@
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
 ## Development Workflow                                                                                                    
-- 会話は全て日本語で行う。                                                            
+- 会話は全て日本語で行う。会話の引き継ぎサマリー（コンテキスト圧縮時の要約）も日本語で行う。                                                            
 - すべての変更はブランチを作成してから行う。
 - 曖昧な点はユーザに質問する。
 -  `main` への直接コミットは禁止。
