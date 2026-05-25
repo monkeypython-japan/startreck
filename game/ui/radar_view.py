@@ -3,7 +3,7 @@ from __future__ import annotations
 import math
 import pygame
 from game.coords import Vec2, GRID
-from game.ui.draw_utils import draw_dashed_line, draw_dashed_circle, draw_star, draw_asterisk
+from game.ui.draw_utils import draw_dashed_line, draw_dashed_circle, draw_star, draw_asterisk, draw_wavy_line
 from game.ui.font_util import make_font
 from typing import TYPE_CHECKING
 
@@ -264,6 +264,30 @@ class RadarView:
                 pygame.draw.circle(surface, (v, v // 2, 0), (sx, sy), r)
         surface.set_clip(old_clip)
 
+    def _draw_destination_marker(self, surface: pygame.Surface) -> None:
+        """プレーヤー艦の目的地マーカー（十字）と破線を描画する。
+        目的地がレーダー範囲外でも破線はビュー端まで描画する。"""
+        nav = self.player.bridge.navigator if self.player.bridge else None
+        if not nav or not nav.destination:
+            return
+        dx, dy = self.world_to_screen(nav.destination)
+        cx, cy = self.rect.centerx, self.rect.centery
+        # 破線 (半透明オーバーレイ、クリップ範囲内で自動カット)
+        overlay = pygame.Surface((self.rect.width, self.rect.height), pygame.SRCALPHA)
+        draw_dashed_line(
+            overlay, (0, 140, 255, 90),
+            (cx - self.rect.left, cy - self.rect.top),
+            (dx - self.rect.left, dy - self.rect.top),
+            dash=6, gap=4,
+        )
+        surface.blit(overlay, self.rect.topleft)
+        # 十字マーカーはレーダービュー内にある場合のみ
+        if self.rect.collidepoint(dx, dy):
+            s = 6
+            color = (0, 140, 255)
+            pygame.draw.line(surface, color, (dx - s, dy), (dx + s, dy), 2)
+            pygame.draw.line(surface, color, (dx, dy - s), (dx, dy + s), 2)
+
     # ── メイン描画 ──────────────────────────────────────────────
 
     def draw(self, surface: pygame.Surface) -> None:
@@ -273,6 +297,7 @@ class RadarView:
         old_clip = surface.get_clip()
         surface.set_clip(self.rect)
         self._draw_objects(surface)
+        self._draw_destination_marker(surface)
         surface.set_clip(old_clip)
 
         # レーダー範囲円 (破線)

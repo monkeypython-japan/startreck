@@ -75,6 +75,34 @@ def draw_star(
     pygame.draw.polygon(surface, color, pts)
 
 
+def draw_wavy_line(
+    surface: pygame.Surface,
+    color: tuple,
+    start: tuple[int, int],
+    end: tuple[int, int],
+    amplitude: int = 4,
+    wavelength: int = 12,
+    width: int = 1,
+) -> None:
+    """目的地マーカー用の波線を描画する。"""
+    x1, y1 = start
+    x2, y2 = end
+    dx, dy = x2 - x1, y2 - y1
+    length = math.hypot(dx, dy)
+    if length < 2:
+        return
+    ux, uy = dx / length, dy / length
+    nx, ny = -uy, ux  # 法線ベクトル
+    steps = max(int(length), 2)
+    pts = []
+    for i in range(steps + 1):
+        along = i / steps * length
+        wave = amplitude * math.sin(along / wavelength * 2 * math.pi)
+        pts.append((int(x1 + ux * along + nx * wave), int(y1 + uy * along + ny * wave)))
+    if len(pts) >= 2:
+        pygame.draw.lines(surface, color, False, pts, width)
+
+
 def draw_dashed_circle(
     surface: pygame.Surface,
     color: tuple,

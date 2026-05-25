@@ -131,3 +131,4 @@ STAR_DURABILITY = float("inf")
 # --- 基地 ---
 BASE_DURABILITY = 20000  # gj
 BASE_SIZE = 1            # grid
+BASE_RADAR_RANGE = 1000  # grid
