@@ -22,7 +22,7 @@ PANEL_X = MAP_SIZE + 10 # 右パネル開始 X 座標
 PANEL_W = WINDOW_W - PANEL_X  # 右パネル幅 (= 470)
 RADAR_SIZE = PANEL_W    # レーダービュー: 正方形
 STATUS_Y = RADAR_SIZE + 10
-STATUS_H = 210
+STATUS_H = 260
 MSG_Y = STATUS_Y + STATUS_H + 8
 BTN_H = 32              # コントロールバーボタン高さ
 BTN_PAD = 4

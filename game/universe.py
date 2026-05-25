@@ -82,6 +82,19 @@ class Universe:
                     if getattr(contact, "faction", "") != f:
                         faction_enemy_contacts[f][contact.id] = contact
 
+        # 敵基地の新規発見を検出するため、各勢力の既知敵基地IDを事前収集
+        known_enemy_base_ids: dict[str, set[str]] = {}
+        for obj in self.objects:
+            if isinstance(obj, Vessel) and obj.integrator:
+                f = obj.faction
+                if f not in known_enemy_base_ids:
+                    enemy_f = "K" if f == "U" else "U"
+                    known_enemy_base_ids[f] = {
+                        r.id for r in obj.integrator.query(faction=enemy_f)
+                        if r.obj_type == "BaseStation"
+                    }
+                    break  # 同勢力の1艦分で代表
+
         for obj in self.objects:
             if not isinstance(obj, Vessel) or not obj.integrator:
                 continue
@@ -97,6 +110,28 @@ class Universe:
             # 味方レーダーで捕捉した敵を共有
             for contact in faction_enemy_contacts.get(f, {}).values():
                 obj.integrator.record(contact, self.time)
+
+        # 敵基地が新規登録された勢力はフリートコマンダーの目標を即時更新
+        from game.crew.bot_fleet_commander import BotFleetCommander
+        updated_factions: set[str] = set()
+        for obj in self.objects:
+            if isinstance(obj, Vessel) and obj.integrator:
+                f = obj.faction
+                if f in updated_factions:
+                    continue
+                enemy_f = "K" if f == "U" else "U"
+                new_ids = {
+                    r.id for r in obj.integrator.query(faction=enemy_f)
+                    if r.obj_type == "BaseStation"
+                }
+                if new_ids != known_enemy_base_ids.get(f, set()):
+                    # 新規発見または消滅: この勢力のフリートコマンダー全員に即時通知
+                    for vessel in self.objects:
+                        if (isinstance(vessel, Vessel) and vessel.faction == f
+                                and vessel.bridge
+                                and isinstance(vessel.bridge.commander, BotFleetCommander)):
+                            vessel.bridge.commander.update_fleet_target()
+                    updated_factions.add(f)
 
     @property
     def victory(self) -> str | None:
