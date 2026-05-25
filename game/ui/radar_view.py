@@ -48,7 +48,7 @@ def _radius_for(obj) -> int:
     from game.objects.missile import Missile
     from game.objects.beam import Beam
     if isinstance(obj, Star):
-        return max(8, int(obj.size * 2.4))  # 2倍サイズの星型
+        return max(6, int(obj.size * 1.8))  # 2倍サイズの75%
     if isinstance(obj, BaseStation):
         return 7
     if isinstance(obj, SpecialShip):
