@@ -109,6 +109,7 @@ SHIELD_AUTO_BEAM_RATE = 50    # %  ビーム検知時
 SHIELD_AUTO_MISSILE_RATE = 100  # %  ミサイル検知時
 
 # --- BOT AI ---
+BOT_EVADE_DAMAGE_RATE   = 0.70  # 蓄積ダメージが耐久性の70%以上で回避行動
 BOT_RETREAT_DAMAGE_RATE = 0.80  # 蓄積ダメージが耐久性の80%以上で退避
 BOT_HOME_ORBIT_RADIUS = 150     # grid
 
