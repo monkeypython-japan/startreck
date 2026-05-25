@@ -67,6 +67,8 @@ class Beam(Mover):
             else:
                 continue
             hull_dmg = obj.receive_damage(dmg)
+            if self.owner and hasattr(obj, 'notify_attacked_by'):
+                obj.notify_attacked_by(self.owner.id)
             self.destroyed = True
             if self._on_report:
                 from game.constants import REPORT_ALERT

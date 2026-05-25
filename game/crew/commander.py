@@ -14,3 +14,7 @@ class Commander(BridgeCrew):
     def tick(self) -> None:
         """1秒ごとに呼ばれる意思決定メソッド。サブクラスで実装。"""
         pass
+
+    def on_attacked_by(self, attacker_id: str) -> None:
+        """被弾時に呼ばれる通知。サブクラスで必要に応じてオーバーライド。"""
+        pass

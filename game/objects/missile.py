@@ -28,6 +28,7 @@ class Missile(Mover):
         self.elapsed: float = 0.0
         self.nav: "MissileNavigation | None" = None
         self._on_report: Callable[[str], None] | None = on_report
+        self.source_id: str | None = None  # 発射した艦のID
 
     def set_nav(self, nav: "MissileNavigation") -> None:
         self.nav = nav
@@ -56,6 +57,8 @@ class Missile(Mover):
         dist = distance_grid(self.pos, target.pos) - target.size
         if dist <= DETONATE_RANGE:
             hull_dmg = target.receive_damage(self.power)
+            if self.source_id and hasattr(target, 'notify_attacked_by'):
+                target.notify_attacked_by(self.source_id)
             self.destroyed = True
             if self._on_report:
                 from game.constants import REPORT_ALERT

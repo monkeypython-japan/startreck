@@ -93,6 +93,10 @@ class Vessel(Mover):
         )
         self.bridge = Bridge(self, self.radar)
 
+    def notify_attacked_by(self, attacker_id: str) -> None:
+        if self.bridge and self.bridge.commander:
+            self.bridge.commander.on_attacked_by(attacker_id)
+
     def receive_damage(self, amount: float) -> float:
         original = amount
         if self.shield is not None and self.shield.current_rate > 0:

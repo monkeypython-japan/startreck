@@ -2,7 +2,7 @@
 from __future__ import annotations
 import math
 import random
-from game.coords import Vec2, wrap_vec, GRID
+from game.coords import Vec2, wrap_vec, GRID, distance_grid
 from game.universe import Universe
 from game.objects.star import Star
 from game.objects.base_station import BaseStation
@@ -11,8 +11,7 @@ from game.vessels.heavy_cruiser import HeavyCruiser
 from game.vessels.special_ship import SpecialShip
 from game.constants import (
     STAR_COUNT_MIN, STAR_COUNT_MAX,
-    KLINGON_FLEET_COUNT, KLINGON_FLEET_SIZE,
-    FEDERATION_BASE_COUNT, FEDERATION_FLEET_SIZE,
+    FLEET_COUNT, FLEET_SIZE, BASE_COUNT,
     FLEET_ORBIT_RADIUS,
 )
 
@@ -74,6 +73,42 @@ def _place_bases(n: int) -> list[Vec2]:
     return positions
 
 
+def _nearest_base(pos: Vec2, bases: list[BaseStation]) -> BaseStation:
+    return min(bases, key=lambda b: distance_grid(pos, b.pos))
+
+
+def _place_faction_fleet(
+    universe: Universe,
+    bases: list[BaseStation],
+    faction: str,
+) -> list[HeavyCruiser]:
+    """艦隊 FLEET_COUNT 組（重巡1 + 駆逐 FLEET_SIZE）を配置し、旗艦リストを返す。"""
+    from game.crew.bot_fleet_commander import BotFleetCommander
+    from game.crew.navigator import Navigator
+    from game.crew.gunner import Gunner
+
+    flagships: list[HeavyCruiser] = []
+    for _ in range(FLEET_COUNT):
+        flagship_pos = _random_sector_center()
+        flagship = HeavyCruiser(flagship_pos, faction=faction)
+
+        # BotFleetCommander に差し替え
+        fleet_cmd = BotFleetCommander(flagship)
+        fleet_cmd.set_home(_nearest_base(flagship_pos, bases))
+        flagship.bridge.commander = fleet_cmd
+
+        orbit_positions = _orbit_positions(flagship_pos, FLEET_ORBIT_RADIUS, FLEET_SIZE)
+        for pos in orbit_positions:
+            d = Destroyer(pos, faction=faction)
+            d.bridge.commander.set_home(flagship)
+            fleet_cmd.add_fleet_member(d)
+            universe.add(d)
+
+        universe.add(flagship)
+        flagships.append(flagship)
+    return flagships
+
+
 def initialize(universe: Universe) -> SpecialShip:
     """宇宙を初期化してプレーヤーの特務艦を返す。"""
 
@@ -82,34 +117,29 @@ def initialize(universe: Universe) -> SpecialShip:
     for pos in _place_stars_uniform(star_count):
         universe.add(Star(pos))
 
-    # 連邦基地 (5個、互いに離れたセクタ)
-    base_positions = _place_bases(FEDERATION_BASE_COUNT)
+    # 連邦基地 (5個)
+    fed_base_positions = _place_bases(BASE_COUNT)
     fed_bases: list[BaseStation] = []
-    for pos in base_positions:
+    for pos in fed_base_positions:
         base = BaseStation(pos, faction="U")
         universe.add(base)
         fed_bases.append(base)
 
-    # 連邦駆逐艦 (基地ごとに 10 隻、基地から 150 grid の円軌道上)
-    for base in fed_bases:
-        orbit_positions = _orbit_positions(base.pos, FLEET_ORBIT_RADIUS, FEDERATION_FLEET_SIZE)
-        for pos in orbit_positions:
-            d = Destroyer(pos, faction="U")
-            d.bridge.commander.set_home(base)
-            universe.add(d)
+    # クリンゴン基地 (5個)
+    kl_base_positions = _place_bases(BASE_COUNT)
+    kl_bases: list[BaseStation] = []
+    for pos in kl_base_positions:
+        base = BaseStation(pos, faction="K")
+        universe.add(base)
+        kl_bases.append(base)
 
-    # クリンゴン艦隊 (3艦隊 × 重巡1 + 駆逐10)
-    for _ in range(KLINGON_FLEET_COUNT):
-        flagship_pos = _random_sector_center()
-        flagship = HeavyCruiser(flagship_pos, faction="K")
-        universe.add(flagship)
-        orbit_positions = _orbit_positions(flagship_pos, FLEET_ORBIT_RADIUS, KLINGON_FLEET_SIZE)
-        for pos in orbit_positions:
-            d = Destroyer(pos, faction="K")
-            d.bridge.commander.set_home(flagship)
-            universe.add(d)
+    # 連邦艦隊 (3組 × 重巡1 + 駆逐10)
+    _place_faction_fleet(universe, fed_bases, faction="U")
 
-    # プレーヤー特務艦 (ランダムな基地の近傍)
+    # クリンゴン艦隊 (3組 × 重巡1 + 駆逐10)
+    _place_faction_fleet(universe, kl_bases, faction="K")
+
+    # プレーヤー特務艦 (ランダムな連邦基地の近傍)
     home_base = random.choice(fed_bases)
     player_pos = wrap_vec(Vec2(
         home_base.pos.x + random.uniform(-0.1, 0.1),

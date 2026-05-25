@@ -15,6 +15,8 @@ class BotCommander(Commander):
     def __init__(self, vessel: "Vessel") -> None:
         super().__init__(vessel)
         self.home: "Thing | None" = None
+        self._attacker_id: str | None = None
+        self._assigned_base_id: str | None = None
 
     def set_home(self, obj: "Thing") -> None:
         self.home = obj
@@ -48,8 +50,8 @@ class BotCommander(Commander):
         if nav and nav._flee_evading:
             nav.end_flee_evasion()
 
-        # 最近傍の敵を探す
-        enemy_record = self._nearest_enemy()
+        # 攻撃目標の選択（優先: 攻撃者 → 割り当て基地 → 近傍敵基地 → 近傍敵艦）
+        enemy_record = self._select_attack_target()
         if enemy_record is None:
             self._patrol()
             return
@@ -66,17 +68,70 @@ class BotCommander(Commander):
         else:
             self._move_toward(enemy_record.pos)
 
+    def on_attacked_by(self, attacker_id: str) -> None:
+        """被弾時に攻撃者IDを記憶する。"""
+        self._attacker_id = attacker_id
+
+    def set_attack_target(self, base_id: str | None) -> None:
+        """フリートコマンダーから割り当てられた攻撃目標基地IDを設定する。"""
+        self._assigned_base_id = base_id
+
     # --- private helpers ---
 
     def _enemy_faction(self) -> str:
         return "K" if self.vessel.faction == "U" else "U"
 
-    def _nearest_enemy(self) -> "ObjectRecord | None":
-        records = self.vessel.integrator.query(faction=self._enemy_faction())
+    def _find_record_by_id(self, obj_id: str) -> "ObjectRecord | None":
+        if not self.vessel.integrator:
+            return None
+        return self.vessel.integrator.get(obj_id)
+
+    def _nearest_enemy_vessel(self) -> "ObjectRecord | None":
+        """最近傍の敵艦（BaseStation除く）を返す。"""
+        if not self.vessel.integrator:
+            return None
+        records = [
+            r for r in self.vessel.integrator.query(faction=self._enemy_faction())
+            if r.obj_type != "BaseStation"
+        ]
         if not records:
             return None
         pos = self.vessel.pos
         return min(records, key=lambda r: distance_grid(pos, r.pos))
+
+    def _nearest_enemy_base_record(self) -> "ObjectRecord | None":
+        """最近傍の敵基地レコードを返す。"""
+        if not self.vessel.integrator:
+            return None
+        records = [
+            r for r in self.vessel.integrator.query(faction=self._enemy_faction())
+            if r.obj_type == "BaseStation"
+        ]
+        if not records:
+            return None
+        pos = self.vessel.pos
+        return min(records, key=lambda r: distance_grid(pos, r.pos))
+
+    def _select_attack_target(self) -> "ObjectRecord | None":
+        """攻撃優先順位: 攻撃者 → 割り当て基地 → 近傍敵基地 → 近傍敵艦"""
+        # 1. 攻撃者への反撃
+        if self._attacker_id:
+            r = self._find_record_by_id(self._attacker_id)
+            if r and r.faction == self._enemy_faction():
+                return r
+            self._attacker_id = None
+        # 2. 割り当て敵基地
+        if self._assigned_base_id:
+            r = self._find_record_by_id(self._assigned_base_id)
+            if r:
+                return r
+            self._assigned_base_id = None
+        # 3. 最近傍の敵基地
+        base_r = self._nearest_enemy_base_record()
+        if base_r:
+            return base_r
+        # 4. 最近傍の敵艦
+        return self._nearest_enemy_vessel()
 
     def _find_target_object(self, record: "ObjectRecord") -> "Thing | None":
         """レーダー接触 or 宇宙オブジェクトから実体を取得する。"""

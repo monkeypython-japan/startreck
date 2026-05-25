@@ -93,14 +93,13 @@ class Universe:
         if not self._initialized:
             return None
         from game.objects.base_station import BaseStation
-        from game.objects.vessel import Vessel
 
-        bases = [o for o in self.objects
-                 if isinstance(o, BaseStation) and o.faction == "U"]
-        klingons = [o for o in self.objects
-                    if isinstance(o, Vessel) and o.faction == "K"]
-        if not bases:
+        bases_U = [o for o in self.objects
+                   if isinstance(o, BaseStation) and o.faction == "U"]
+        bases_K = [o for o in self.objects
+                   if isinstance(o, BaseStation) and o.faction == "K"]
+        if not bases_U:
             return "K"
-        if not klingons:
+        if not bases_K:
             return "U"
         return None

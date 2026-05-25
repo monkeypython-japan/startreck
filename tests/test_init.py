@@ -10,8 +10,7 @@ from game.vessels.heavy_cruiser import HeavyCruiser
 from game.vessels.destroyer import Destroyer
 from game.constants import (
     STAR_COUNT_MIN, STAR_COUNT_MAX,
-    KLINGON_FLEET_COUNT, KLINGON_FLEET_SIZE,
-    FEDERATION_BASE_COUNT, FEDERATION_FLEET_SIZE,
+    FLEET_COUNT, FLEET_SIZE, BASE_COUNT,
 )
 
 
@@ -30,28 +29,41 @@ def test_stars_count():
 def test_federation_bases():
     uni, _ = build_universe()
     bases = [o for o in uni.objects if isinstance(o, BaseStation) and o.faction == "U"]
-    assert len(bases) == FEDERATION_BASE_COUNT
+    assert len(bases) == BASE_COUNT
+
+
+def test_klingon_bases():
+    uni, _ = build_universe()
+    bases = [o for o in uni.objects if isinstance(o, BaseStation) and o.faction == "K"]
+    assert len(bases) == BASE_COUNT
+
+
+def test_federation_flagships():
+    uni, _ = build_universe()
+    flagships = [o for o in uni.objects
+                 if isinstance(o, HeavyCruiser) and o.faction == "U"]
+    assert len(flagships) == FLEET_COUNT
 
 
 def test_federation_destroyers():
     uni, _ = build_universe()
     fed = [o for o in uni.objects
            if isinstance(o, Destroyer) and o.faction == "U"]
-    assert len(fed) == FEDERATION_BASE_COUNT * FEDERATION_FLEET_SIZE
+    assert len(fed) == FLEET_COUNT * FLEET_SIZE
 
 
 def test_klingon_flagships():
     uni, _ = build_universe()
     flagships = [o for o in uni.objects
                  if isinstance(o, HeavyCruiser) and o.faction == "K"]
-    assert len(flagships) == KLINGON_FLEET_COUNT
+    assert len(flagships) == FLEET_COUNT
 
 
 def test_klingon_destroyers():
     uni, _ = build_universe()
     kli = [o for o in uni.objects
            if isinstance(o, Destroyer) and o.faction == "K"]
-    assert len(kli) == KLINGON_FLEET_COUNT * KLINGON_FLEET_SIZE
+    assert len(kli) == FLEET_COUNT * FLEET_SIZE
 
 
 def test_player_ship_is_special_ship():
@@ -76,7 +88,7 @@ def test_victory_none_at_start():
     assert uni.victory is None
 
 
-def test_victory_klingon_wins_when_all_bases_destroyed():
+def test_victory_klingon_wins_when_all_fed_bases_destroyed():
     uni, _ = build_universe()
     for obj in list(uni.objects):
         if isinstance(obj, BaseStation) and obj.faction == "U":
@@ -85,10 +97,10 @@ def test_victory_klingon_wins_when_all_bases_destroyed():
     assert uni.victory == "K"
 
 
-def test_victory_federation_wins_when_all_klingons_destroyed():
+def test_victory_federation_wins_when_all_klingon_bases_destroyed():
     uni, _ = build_universe()
     for obj in list(uni.objects):
-        if isinstance(obj, Vessel) and obj.faction == "K":
+        if isinstance(obj, BaseStation) and obj.faction == "K":
             obj.destroyed = True
     uni.remove_destroyed()
     assert uni.victory == "U"

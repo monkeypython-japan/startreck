@@ -46,6 +46,7 @@ class MissileLauncher(Equipment):
             flight_time=self.missile_flight_time,
             on_report=self._on_report,
         )
+        m.source_id = self.owner.id
         nav = MissileNavigation(m, self.owner, radar)
         nav.set_target(target, self.missile_speed)
         m.set_nav(nav)
