@@ -13,6 +13,8 @@ from game.constants import (
     STAR_COUNT_MIN, STAR_COUNT_MAX,
     FLEET_COUNT, FLEET_SIZE, BASE_COUNT,
     FLEET_ORBIT_RADIUS,
+    GUARD_PER_BASE, GUARD_PER_FLAGSHIP,
+    GUARD_HOME_MIN, GUARD_HOME_MAX,
 )
 
 SPACE_SIZE = 10.0
@@ -124,6 +126,31 @@ def _place_faction_fleet(
     return flagships
 
 
+def _place_guard_fleet(
+    universe: Universe,
+    bases: list[BaseStation],
+    flagships: list[HeavyCruiser],
+    faction: str,
+) -> None:
+    """全基地に GUARD_PER_BASE 隻、全旗艦に GUARD_PER_FLAGSHIP 隻の護衛型巡洋艦を配置する。"""
+    from game.vessels.guard_cruiser import GuardCruiser
+    mid_dist = (GUARD_HOME_MIN + GUARD_HOME_MAX) / 2  # 600 grid
+
+    for base in bases:
+        positions = _orbit_positions(base.pos, mid_dist, GUARD_PER_BASE)
+        for pos in positions:
+            guard = GuardCruiser(pos, faction=faction)
+            guard.bridge.commander.set_home(base)
+            universe.add(guard)
+
+    for flagship in flagships:
+        positions = _orbit_positions(flagship.pos, mid_dist, GUARD_PER_FLAGSHIP)
+        for pos in positions:
+            guard = GuardCruiser(pos, faction=faction)
+            guard.bridge.commander.set_home(flagship)
+            universe.add(guard)
+
+
 def initialize(universe: Universe) -> SpecialShip:
     """宇宙を初期化してプレーヤーの特務艦を返す。"""
 
@@ -149,10 +176,14 @@ def initialize(universe: Universe) -> SpecialShip:
         kl_bases.append(base)
 
     # 連邦艦隊 (3組 × 重巡1 + 駆逐10)
-    _place_faction_fleet(universe, fed_bases, faction="U")
+    fed_flagships = _place_faction_fleet(universe, fed_bases, faction="U")
 
     # クリンゴン艦隊 (3組 × 重巡1 + 駆逐10)
-    _place_faction_fleet(universe, kl_bases, faction="K")
+    kl_flagships = _place_faction_fleet(universe, kl_bases, faction="K")
+
+    # 護衛型巡洋艦 (基地×10隻 + 旗艦×5隻)
+    _place_guard_fleet(universe, fed_bases, fed_flagships, faction="U")
+    _place_guard_fleet(universe, kl_bases, kl_flagships, faction="K")
 
     # プレーヤー特務艦 (ランダムな連邦基地の近傍)
     home_base = random.choice(fed_bases)

@@ -16,6 +16,7 @@ class ObjectRecord:
     faction: str   # "U", "K", ""
     obj_type: str  # クラス名
     last_seen: int  # ゲーム時刻 (秒)
+    heading: Vec2 = Vec2(0.0, 1.0)  # 最終既知の進行方向
 
 
 class Integrator(Equipment):
@@ -26,12 +27,14 @@ class Integrator(Equipment):
     def record(self, obj: "Thing", game_time: int) -> None:
         """レーダー探知オブジェクトを全天マップに記録・更新する。"""
         faction = getattr(obj, "faction", "")
+        heading = getattr(obj, "heading", Vec2(0.0, 1.0))
         self.star_map[obj.id] = ObjectRecord(
             id=obj.id,
             pos=obj.pos,
             faction=faction,
             obj_type=type(obj).__name__,
             last_seen=game_time,
+            heading=heading,
         )
 
     def get(self, obj_id: str) -> ObjectRecord | None:
