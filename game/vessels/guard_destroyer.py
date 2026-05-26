@@ -1,10 +1,10 @@
-"""護衛型巡洋艦: 重巡洋艦のコマンダーを BotGuardCommander に設定したもの。"""
+"""護衛型駆逐艦: 駆逐艦のコマンダーを BotGuardCommander に設定したもの。"""
 from __future__ import annotations
 from game.coords import Vec2
-from game.vessels.heavy_cruiser import HeavyCruiser
+from game.vessels.destroyer import Destroyer
 
 
-class GuardCruiser(HeavyCruiser):
+class GuardDestroyer(Destroyer):
     def _attach_bot_crew(self) -> None:
         from game.crew.navigator import Navigator
         from game.crew.gunner import Gunner
