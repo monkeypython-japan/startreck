@@ -165,20 +165,23 @@ class BotGuardCommander(BotCommander):
     # ── ポジション管理 ────────────────────────────────────────────
 
     def _guard_position(self) -> None:
-        """ホーム周辺 200〜1000 grid のゾーンに位置取りする。"""
+        """ホーム周辺 200〜1000 grid のゾーンに位置取りする。
+        ホームが移動体（旗艦）の場合は範囲内でも毎ティック追従する。"""
         if not self.home or not self.vessel.bridge:
             return
         nav = self.vessel.bridge.navigator
         if not nav:
             return
+        from game.objects.vessel import Vessel as _Vessel
         home_pos = self.home.pos
         dist = distance_grid(self.vessel.pos, home_pos)
         mid_dist = (GUARD_HOME_MIN + GUARD_HOME_MAX) / 2  # 600 grid
-        if dist < GUARD_HOME_MIN or dist > GUARD_HOME_MAX:
-            # 適切な距離（中間点）に移動
+        home_is_moving = isinstance(self.home, _Vessel)
+
+        if dist < GUARD_HOME_MIN or dist > GUARD_HOME_MAX or home_is_moving:
+            # 適切な距離（中間点）に移動。旗艦ホームは範囲内でも毎ティック更新して追従
             away = direction_to(home_pos, self.vessel.pos)
             if away.length() < 0.001:
-                # ホームと重なっている場合は任意方向に移動
                 away = Vec2(1.0, 0.0)
             target = wrap_vec(Vec2(
                 home_pos.x + away.x * mid_dist * GRID,
