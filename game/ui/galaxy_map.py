@@ -1,7 +1,7 @@
 """全天マップ: プレーヤー艦を常に中央に固定し宇宙全体を表示する。"""
 from __future__ import annotations
 import pygame
-from game.coords import Vec2, GRID
+from game.coords import Vec2, GRID, distance
 from game.ui.draw_utils import draw_dashed_line, draw_dashed_circle, draw_star, draw_asterisk, draw_wavy_line
 from typing import TYPE_CHECKING
 
@@ -77,6 +77,8 @@ class GalaxyMap:
         self._anim_from: "Vec2 | None" = None     # 開始オフセット
         self._anim_elapsed: float = 0.0
         self._anim_duration: float = 0.5
+        # スキャン済みセクター (sx, sy) の集合
+        self._scanned_sectors: set[tuple[int, int]] = set()
 
     # ── アニメーション ───────────────────────────────────────────
 
@@ -94,19 +96,38 @@ class GalaxyMap:
         self._anim_elapsed = 0.0
 
     def update(self, dt: float) -> None:
-        if self._anim_offset is None:
+        if self._anim_offset is not None:
+            self._anim_elapsed += dt
+            t = min(1.0, self._anim_elapsed / self._anim_duration)
+            if t >= 1.0:
+                self._anim_offset = None
+                self._anim_from = None
+            else:
+                factor = 1.0 - t
+                self._anim_offset = Vec2(
+                    self._anim_from.x * factor,
+                    self._anim_from.y * factor,
+                )
+        self._update_scanned_sectors()
+
+    def _update_scanned_sectors(self) -> None:
+        """レーダー範囲が全域をカバーしているセクターをスキャン済みに追加する。"""
+        if not self.player.radar:
             return
-        self._anim_elapsed += dt
-        t = min(1.0, self._anim_elapsed / self._anim_duration)
-        if t >= 1.0:
-            self._anim_offset = None
-            self._anim_from = None
-        else:
-            factor = 1.0 - t
-            self._anim_offset = Vec2(
-                self._anim_from.x * factor,
-                self._anim_from.y * factor,
-            )
+        scan_coord = self.player.radar.scan_range * GRID
+        pos = self.player.pos
+        for sx in range(10):
+            for sy in range(10):
+                if (sx, sy) in self._scanned_sectors:
+                    continue
+                corners = (
+                    Vec2(float(sx),     float(sy)),
+                    Vec2(float(sx + 1), float(sy)),
+                    Vec2(float(sx),     float(sy + 1)),
+                    Vec2(float(sx + 1), float(sy + 1)),
+                )
+                if all(distance(pos, c) <= scan_coord for c in corners):
+                    self._scanned_sectors.add((sx, sy))
 
     # ── 座標変換 ────────────────────────────────────────────────
 
@@ -177,6 +198,26 @@ class GalaxyMap:
             if -2 <= sy <= h + 2:
                 draw_dashed_line(gs, color, (0, sy), (w, sy), dash=6, gap=4)
         surface.blit(gs, self.rect.topleft)
+
+    def _draw_scanned_overlay(self, surface: pygame.Surface) -> None:
+        """スキャン済みセクターに半透明グレーを重ねる。
+        TL コーナーのみで位置を決め、マップ端を跨ぐ場合は折り返し描画する。"""
+        if not self._scanned_sectors:
+            return
+        ov = pygame.Surface((self.rect.width, self.rect.height), pygame.SRCALPHA)
+        color = (160, 160, 160, 30)
+        cell = max(1, int(self._scale))
+        W, H = self.rect.width, self.rect.height
+        for sx, sy in self._scanned_sectors:
+            x0, y0 = self.world_to_screen(Vec2(float(sx), float(sy)))
+            rx = x0 - self.rect.left
+            ry = y0 - self.rect.top
+            for ox in (0, W, -W):
+                for oy in (0, H, -H):
+                    dx, dy = rx + ox, ry + oy
+                    if -cell < dx < W and -cell < dy < H:
+                        pygame.draw.rect(ov, color, (dx, dy, cell, cell))
+        surface.blit(ov, self.rect.topleft)
 
     def _draw_range_circles(self, surface: pygame.Surface) -> None:
         if self._anim_offset is not None:
@@ -381,6 +422,7 @@ class GalaxyMap:
     def draw(self, surface: pygame.Surface, universe: "Universe") -> None:
         pygame.draw.rect(surface, MAP_BG, self.rect)
         self._draw_grid(surface)
+        self._draw_scanned_overlay(surface)
         self._draw_range_circles(surface)
 
         old_clip = surface.get_clip()
