@@ -9,7 +9,7 @@ HEAVY_CRUISER = dict(
     missile_capacity=100,
     capacitor_max=2000,   # gj
     generator_rate_max=20,  # gj/sec
-    fuel_max=10000,       # gj
+    fuel_max=15000,       # gj
     radar_range=1000,     # grid
     supply_provider=True,
 )
@@ -21,7 +21,7 @@ DESTROYER = dict(
     missile_capacity=20,
     capacitor_max=500,
     generator_rate_max=10,
-    fuel_max=1000,
+    fuel_max=1500,
     radar_range=750,
     supply_provider=False,
 )
@@ -33,7 +33,7 @@ SPECIAL_SHIP = dict(
     missile_capacity=50,
     capacitor_max=2000,
     generator_rate_max=30,
-    fuel_max=5000,
+    fuel_max=7500,
     radar_range=1500,
     supply_provider=False,
     has_jump_drive=True,
