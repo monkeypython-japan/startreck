@@ -123,6 +123,16 @@ FLEET_COUNT = 3               # 艦隊数 (両軍共通)
 FLEET_SIZE = 10               # 駆逐艦数 per 艦隊 (旗艦1隻 + 駆逐艦10隻)
 BASE_COUNT = 5                # 基地数 (両軍共通)
 FLEET_ORBIT_RADIUS = 150      # grid  旗艦・基地からの初期配置半径
+GUARD_PER_BASE = 10           # 護衛型巡洋艦 per 基地
+GUARD_PER_FLAGSHIP = 5        # 護衛型巡洋艦 per 旗艦
+
+# --- 護衛型巡洋艦 (BotGuardCommander) ---
+GUARD_HOME_MIN = 200          # grid  ホームからの最小距離
+GUARD_HOME_MAX = 1000         # grid  ホームからの最大距離
+GUARD_THREAT_RANGE = 600      # grid  ホーム周辺の脅威検出範囲
+GUARD_SUPPLY_DAMAGE_RATE = 0.35   # ダメージがこれ以上で補給
+GUARD_SUPPLY_FUEL_RATE   = 0.30   # 燃料比率がこれ以下で補給
+GUARD_SUPPLY_MISSILE_RATE = 0.30  # ミサイル比率がこれ以下で補給
 
 # --- 恒星 ---
 STAR_SIZE = 5  # grid
