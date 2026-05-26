@@ -93,7 +93,7 @@ class BotGuardCommander(BotCommander):
     # ── 攻撃目標選択 ─────────────────────────────────────────────
 
     def _select_guard_target(self) -> "ObjectRecord | None":
-        """ガード専用優先順位: ホーム攻撃者 → 自艦攻撃者 → ホーム接近中の敵"""
+        """ガード専用優先順位: ホーム攻撃者 → 自艦攻撃者 → ホーム接近中の敵 → 最近傍敵基地"""
         if not self.vessel.integrator:
             return None
         enemy_f = self._enemy_faction()
@@ -113,7 +113,12 @@ class BotGuardCommander(BotCommander):
             self._attacker_id = None
 
         # 3. ホーム近傍でホームに接近中の敵（最もホームから遠いものを優先）
-        return self._find_approaching_enemy(records)
+        approaching = self._find_approaching_enemy(records)
+        if approaching:
+            return approaching
+
+        # 4. 最近傍の敵基地
+        return self._nearest_enemy_base_record()
 
     def _find_home_attacker(self, records: list["ObjectRecord"]) -> "ObjectRecord | None":
         """ホームへ向かう敵兵器の発射元（= ホームへの攻撃者）を返す。"""
