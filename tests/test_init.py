@@ -8,7 +8,7 @@ from game.objects.vessel import Vessel
 from game.vessels.special_ship import SpecialShip
 from game.vessels.heavy_cruiser import HeavyCruiser
 from game.vessels.destroyer import Destroyer
-from game.vessels.guard_cruiser import GuardCruiser
+from game.vessels.guard_destroyer import GuardDestroyer
 from game.constants import (
     STAR_COUNT_MIN, STAR_COUNT_MAX,
     FLEET_COUNT, FLEET_SIZE, BASE_COUNT,
@@ -50,7 +50,7 @@ def test_federation_flagships():
 def test_federation_destroyers():
     uni, _ = build_universe()
     fed = [o for o in uni.objects
-           if isinstance(o, Destroyer) and o.faction == "U"]
+           if type(o) is Destroyer and o.faction == "U"]
     assert len(fed) == FLEET_COUNT * FLEET_SIZE
 
 
@@ -61,16 +61,16 @@ def test_klingon_flagships():
     assert len(flagships) == FLEET_COUNT
 
 
-def test_federation_guard_cruisers():
+def test_federation_guard_destroyers():
     uni, _ = build_universe()
-    guards = [o for o in uni.objects if isinstance(o, GuardCruiser) and o.faction == "U"]
+    guards = [o for o in uni.objects if isinstance(o, GuardDestroyer) and o.faction == "U"]
     expected = BASE_COUNT * GUARD_PER_BASE + FLEET_COUNT * GUARD_PER_FLAGSHIP
     assert len(guards) == expected
 
 
-def test_klingon_guard_cruisers():
+def test_klingon_guard_destroyers():
     uni, _ = build_universe()
-    guards = [o for o in uni.objects if isinstance(o, GuardCruiser) and o.faction == "K"]
+    guards = [o for o in uni.objects if isinstance(o, GuardDestroyer) and o.faction == "K"]
     expected = BASE_COUNT * GUARD_PER_BASE + FLEET_COUNT * GUARD_PER_FLAGSHIP
     assert len(guards) == expected
 
@@ -78,7 +78,7 @@ def test_klingon_guard_cruisers():
 def test_klingon_destroyers():
     uni, _ = build_universe()
     kli = [o for o in uni.objects
-           if isinstance(o, Destroyer) and o.faction == "K"]
+           if type(o) is Destroyer and o.faction == "K"]
     assert len(kli) == FLEET_COUNT * FLEET_SIZE
 
 

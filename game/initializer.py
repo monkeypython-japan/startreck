@@ -132,21 +132,21 @@ def _place_guard_fleet(
     flagships: list[HeavyCruiser],
     faction: str,
 ) -> None:
-    """全基地に GUARD_PER_BASE 隻、全旗艦に GUARD_PER_FLAGSHIP 隻の護衛型巡洋艦を配置する。"""
-    from game.vessels.guard_cruiser import GuardCruiser
+    """全基地に GUARD_PER_BASE 隻、全旗艦に GUARD_PER_FLAGSHIP 隻の護衛型駆逐艦を配置する。"""
+    from game.vessels.guard_destroyer import GuardDestroyer
     mid_dist = (GUARD_HOME_MIN + GUARD_HOME_MAX) / 2  # 600 grid
 
     for base in bases:
         positions = _orbit_positions(base.pos, mid_dist, GUARD_PER_BASE)
         for pos in positions:
-            guard = GuardCruiser(pos, faction=faction)
+            guard = GuardDestroyer(pos, faction=faction)
             guard.bridge.commander.set_home(base)
             universe.add(guard)
 
     for flagship in flagships:
         positions = _orbit_positions(flagship.pos, mid_dist, GUARD_PER_FLAGSHIP)
         for pos in positions:
-            guard = GuardCruiser(pos, faction=faction)
+            guard = GuardDestroyer(pos, faction=faction)
             guard.bridge.commander.set_home(flagship)
             universe.add(guard)
 
