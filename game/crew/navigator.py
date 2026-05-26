@@ -89,11 +89,19 @@ class Navigator(BridgeCrew):
             elif d_grid < SEPARATION_ZONE:
                 fwd = self.vessel.heading.x * nx + self.vessel.heading.y * ny
                 if fwd > 0.6:
-                    force = (SEPARATION_ZONE - d_grid) / SEPARATION_ZONE * fwd * 0.5
+                    force = (SEPARATION_ZONE - d_grid) / SEPARATION_ZONE * fwd * 0.3
                     sx -= nx * force
                     sy -= ny * force
-        if math.hypot(sx, sy) < 0.001:
-            return
+
+        sep_mag = math.hypot(sx, sy)
+        if sep_mag < 0.001:
+            # 対称包囲: vessel ID ハッシュで決定論的な微小摂動を加えて対称性を破る
+            angle = (hash(self.vessel.id) % 360) * math.pi / 180.0
+            sx, sy = math.cos(angle) * 0.15, math.sin(angle) * 0.15
+        elif sep_mag > 1.5:
+            # 多数の近傍艦の合力が大きすぎる場合は上限を設けて heading を圧倒させない
+            sx, sy = sx / sep_mag * 1.5, sy / sep_mag * 1.5
+
         hx = self.vessel.heading.x + sx
         hy = self.vessel.heading.y + sy
         mag = math.hypot(hx, hy)

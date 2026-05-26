@@ -260,6 +260,19 @@ class GalaxyMap:
                     ids.add(c.id)
         return ids
 
+    def _enemy_radar_vessel_ids(self, universe: "Universe") -> set:
+        """敵レーダーに現在捕捉されている味方艦艇の ID セットを返す。"""
+        from game.objects.vessel import Vessel
+        enemy_faction = "K" if self.player.faction == "U" else "U"
+        result: set = set()
+        for obj in universe.objects:
+            if not isinstance(obj, Vessel) or obj.faction != enemy_faction or not obj.radar:
+                continue
+            for contact in obj.radar.contacts:
+                if getattr(contact, "faction", "") == self.player.faction:
+                    result.add(contact.id)
+        return result
+
     def _enemy_detected_base_ids(self, universe: "Universe") -> set:
         """敵インテグレータに記録されている味方基地の ID セットを返す。"""
         from game.objects.vessel import Vessel
@@ -282,6 +295,7 @@ class GalaxyMap:
         from game.vessels.heavy_cruiser import HeavyCruiser
 
         active_ids = self._active_contact_ids(universe)
+        enemy_radar_vessel_ids = self._enemy_radar_vessel_ids(universe)
         enemy_detected_base_ids = self._enemy_detected_base_ids(universe)
         # インテグレータフィルタ: 僚艦は常時、敵・中立はインテグレータに記録済みのみ表示
         integrator_ids = (
@@ -343,6 +357,9 @@ class GalaxyMap:
                 pygame.draw.circle(surface, (255, 255, 255), (sx, sy), 2)
             # 敵インテグレータに記録済みの味方基地 (白点)
             if isinstance(obj, _BS) and obj.faction == self.player.faction and obj.id in enemy_detected_base_ids:
+                pygame.draw.circle(surface, (255, 255, 255), (sx, sy), 2)
+            # 敵レーダーに現在捕捉されている味方艦艇 (白点)
+            if isinstance(obj, Vessel) and obj.faction == self.player.faction and obj.id in enemy_radar_vessel_ids:
                 pygame.draw.circle(surface, (255, 255, 255), (sx, sy), 2)
             if isinstance(obj, Vessel) and obj.speed > 0:
                 ex = int(sx + obj.heading.x * 16)

@@ -16,6 +16,9 @@ def _run_game(screen: pygame.Surface, clock: pygame.time.Clock) -> str:
     ui = GameUI(screen, universe, player)
     font_large = make_font(56)
 
+    winner: str | None = None
+    result_surf: pygame.Surface | None = None
+
     while True:
         dt = clock.tick(FPS) / 1000.0
 
@@ -32,24 +35,23 @@ def _run_game(screen: pygame.Surface, clock: pygame.time.Clock) -> str:
         if ui.reset_requested:
             return "reset"
 
-        if not ui.is_paused:
+        if not ui.is_paused and winner is None:
             universe.update(dt)
-
-        ui.update(dt)
-        ui.draw()
-        pygame.display.flip()
-
-        if not ui.is_paused:
-            winner = universe.victory
-            if winner is not None:
+            w = universe.victory
+            if w is not None:
+                winner = w
                 msg = "連邦の勝利！" if winner == "U" else "クリンゴンの勝利！"
                 print(f"ゲーム終了: {msg}  (Time: {universe.time}s)")
                 result_surf = font_large.render(msg, True, (255, 255, 100))
-                screen.blit(result_surf, (WINDOW_W // 2 - result_surf.get_width() // 2,
-                                          WINDOW_H // 2 - 24))
-                pygame.display.flip()
-                pygame.time.wait(3000)
-                return "quit"
+
+        ui.update(dt)
+        ui.draw()
+
+        if result_surf is not None:
+            screen.blit(result_surf, (WINDOW_W // 2 - result_surf.get_width() // 2,
+                                      WINDOW_H // 2 - 24))
+
+        pygame.display.flip()
 
 
 def main() -> None:
