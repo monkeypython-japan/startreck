@@ -15,6 +15,7 @@ RADAR_BG = (255, 255, 255)
 HIGHLIGHT_COLOR = (220, 160, 0)
 GRID_COLOR = (160, 170, 190)
 RADAR_RING_COLOR = (80, 100, 180)
+MISSILE_RANGE_COLOR = (60, 130, 255, 35)
 
 # 白背景用の暗めの色
 def _color_for(obj) -> tuple:
@@ -288,11 +289,24 @@ class RadarView:
             pygame.draw.line(surface, color, (dx - s, dy), (dx + s, dy), 2)
             pygame.draw.line(surface, color, (dx, dy - s), (dx, dy + s), 2)
 
+    def _draw_range_overlay(self, surface: pygame.Surface) -> None:
+        """ミサイル射程の半透明青円を描画する。"""
+        if not (self.player.missile_launcher and self.player.missile_launcher.stock > 0):
+            return
+        m_px = int(self.player.missile_launcher.missile_range * GRID * self._scale)
+        if m_px <= 0:
+            return
+        overlay = pygame.Surface((self.rect.width, self.rect.height), pygame.SRCALPHA)
+        ocx, ocy = self.rect.width // 2, self.rect.height // 2
+        pygame.draw.circle(overlay, MISSILE_RANGE_COLOR, (ocx, ocy), m_px)
+        surface.blit(overlay, self.rect.topleft)
+
     # ── メイン描画 ──────────────────────────────────────────────
 
     def draw(self, surface: pygame.Surface) -> None:
         pygame.draw.rect(surface, RADAR_BG, self.rect)
         self._draw_grid(surface)
+        self._draw_range_overlay(surface)
 
         old_clip = surface.get_clip()
         surface.set_clip(self.rect)
