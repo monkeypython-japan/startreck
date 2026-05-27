@@ -57,7 +57,7 @@ def _collect_faction_stats(universe: "Universe", faction: str) -> dict:
 def write_game_log(universe: "Universe", winner: str | None, log_dir: str = ".") -> str:
     """ゲームログをマークダウン形式で書き出し、ファイルパスを返す。"""
     ts = datetime.now().strftime("%Y%m%d_%H%M%S")
-    filename = f"gamelog_{ts}.txt"
+    filename = f"gamelog_{ts}.md"
     filepath = os.path.join(log_dir, filename)
 
     u = _collect_faction_stats(universe, "U")
