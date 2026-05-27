@@ -11,6 +11,7 @@ class Universe:
         self._initialized: bool = False  # initialize() が呼ばれた後に True
         self.recent_explosions: list = []  # UIが毎フレーム読み取り後にクリアする
         self.destroyed_bases: list[tuple] = []  # (pos, faction) 破壊済み基地の永続記録
+        self._destroyed_vessel_stats: list[dict] = []  # ログ用: 破壊済み艦艇の統計スナップショット
 
     def add(self, obj: Thing) -> None:
         self.objects.append(obj)
@@ -22,11 +23,22 @@ class Universe:
         from game.objects.missile import Missile
         from game.objects.beam import Beam
         from game.objects.base_station import BaseStation
+        from game.objects.vessel import Vessel
         for o in self.objects:
             if o.destroyed and not isinstance(o, (Missile, Beam)):
                 self.recent_explosions.append(o.pos)
                 if isinstance(o, BaseStation):
                     self.destroyed_bases.append((o.pos, o.faction))
+                elif isinstance(o, Vessel):
+                    self._destroyed_vessel_stats.append({
+                        "faction": o.faction,
+                        "ml_capacity": o.missile_launcher.capacity if o.missile_launcher else 0,
+                        "ml_fired": o.missile_launcher.shots_fired if o.missile_launcher else 0,
+                        "ml_stock": o.missile_launcher.stock if o.missile_launcher else 0,
+                        "fuel_max": o.generator.fuel_max if o.generator else 0.0,
+                        "fuel_consumed": o.generator.fuel_consumed if o.generator else 0.0,
+                        "fuel_remaining": o.generator.fuel if o.generator else 0.0,
+                    })
         self.objects = [o for o in self.objects if not o.destroyed]
 
     def update(self, dt: float) -> None:

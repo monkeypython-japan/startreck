@@ -1,6 +1,7 @@
 """艦艇: 武装・装備を持つ移動体。"""
 from __future__ import annotations
-from game.coords import Vec2
+import math
+from game.coords import Vec2, direction_to
 from game.objects.mover import Mover
 from typing import TYPE_CHECKING
 
@@ -107,6 +108,19 @@ class Vessel(Mover):
         if hull_dmg > 0 and self.bridge and self.bridge.gunner:
             self.bridge.gunner.report_hit(hull_dmg, original - hull_dmg)
         return hull_dmg
+
+    def turn_to(self, target: Vec2) -> None:
+        """進路を target 方向に変更し、変化量に応じたエネルギーを消費する。
+        意図的な進路変更（set_destination 呼び出し時）にのみ使用する。"""
+        from game.constants import MOVE_ENERGY_PER_SPEED
+        h = direction_to(self.pos, target)
+        if h.length() < 0.001:
+            return
+        diff_mag = math.hypot(h.x - self.heading.x, h.y - self.heading.y)
+        if diff_mag > 0.001 and self.speed > 0 and self.generator:
+            cost = diff_mag * self.speed * MOVE_ENERGY_PER_SPEED
+            self.generator.request_energy(cost)
+        self.heading = h
 
     def set_speed(self, new_speed: float) -> None:
         new_speed = max(0.0, min(new_speed, self.max_speed))

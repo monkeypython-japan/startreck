@@ -32,6 +32,7 @@ class MissileLauncher(Equipment):
         self._reload_remaining: float = 0.0
         self._on_report: Callable[[str], None] | None = on_report
         self._active: list["Missile"] = []  # 発射済みミサイルのリスト
+        self.shots_fired: int = 0            # 累計発射数（ログ用）
 
     def update(self, dt: float) -> None:
         if self._reload_remaining > 0.0:
@@ -64,6 +65,7 @@ class MissileLauncher(Equipment):
         from game.coords import direction_to
         m.heading = direction_to(self.owner.pos, target.pos)
         self.stock -= 1
+        self.shots_fired += 1
         self._active.append(m)
         self._reload_remaining = self._reload_time
         if self._on_report:
