@@ -44,6 +44,10 @@ class BotCommander(Commander):
         if self.vessel.damage >= self.vessel.durability * BOT_EVADE_DAMAGE_RATE:
             if nav and not nav._flee_evading:
                 nav.start_flee_evasion()
+            if nav and nav._flee_evading:
+                return
+            # レーダー範囲内に敵がなく逃避が即終了した場合は補給退避へ
+            self._retreat()
             return
 
         # 回避行動中だが閾値を下回った場合（補給後）は回避を解除
