@@ -29,6 +29,7 @@ class Missile(Mover):
         self.nav: "MissileNavigation | None" = None
         self._on_report: Callable[[str], None] | None = on_report
         self.source_id: str | None = None  # 発射した艦のID
+        self.intercepted: bool = False     # ビームで撃墜された場合 True
 
     def set_nav(self, nav: "MissileNavigation") -> None:
         self.nav = nav

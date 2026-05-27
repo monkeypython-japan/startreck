@@ -41,6 +41,16 @@ def _collect_faction_stats(universe: "Universe", faction: str) -> dict:
     fuel_remaining = sum((v.generator.fuel if v.generator else 0.0) for v in surviving)
     fuel_unused = fuel_initial - fuel_consumed
 
+    beam_fired = (
+        sum(s.get("beam_fired", 0) for s in destroyed)
+        + sum((v.beam_launcher.shots_fired if v.beam_launcher else 0) for v in surviving)
+    )
+    beam_hits = (
+        sum(s.get("beam_hits", 0) for s in destroyed)
+        + sum((v.beam_launcher.hits if v.beam_launcher else 0) for v in surviving)
+    )
+    beam_hit_rate = (beam_hits / beam_fired * 100.0) if beam_fired > 0 else 0.0
+
     return {
         "vessel_count": vessel_count,
         "ml_initial": ml_initial,
@@ -51,6 +61,9 @@ def _collect_faction_stats(universe: "Universe", faction: str) -> dict:
         "fuel_consumed": fuel_consumed,
         "fuel_unused": fuel_unused,
         "fuel_remaining": fuel_remaining,
+        "beam_fired": beam_fired,
+        "beam_hits": beam_hits,
+        "beam_hit_rate": beam_hit_rate,
     }
 
 
@@ -102,6 +115,13 @@ def write_game_log(universe: "Universe", winner: str | None, log_dir: str = ".")
          f" {u['fuel_unused']:.0f} | {u['fuel_remaining']:.0f} |"),
         (f"| クリンゴン | {k['fuel_initial']:.0f} | {k['fuel_consumed']:.0f} |"
          f" {k['fuel_unused']:.0f} | {k['fuel_remaining']:.0f} |"),
+        "",
+        "## ビーム統計",
+        "",
+        "| 勢力 | 発射回数 | 命中回数 | 命中率 |",
+        "|------|---------|---------|-------|",
+        f"| 連邦 | {u['beam_fired']} | {u['beam_hits']} | {u['beam_hit_rate']:.1f}% |",
+        f"| クリンゴン | {k['beam_fired']} | {k['beam_hits']} | {k['beam_hit_rate']:.1f}% |",
     ]
 
     with open(filepath, "w", encoding="utf-8") as f:

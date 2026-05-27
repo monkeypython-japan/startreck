@@ -1,6 +1,6 @@
 """ガンナー: 武装操作とシールド自動展開を担当。"""
 from __future__ import annotations
-from game.coords import direction_to
+from game.coords import direction_to, distance_grid
 from game.crew.bridge_crew import BridgeCrew
 from game.constants import SHIELD_AUTO_BEAM_RATE, SHIELD_AUTO_MISSILE_RATE
 from typing import TYPE_CHECKING
@@ -39,6 +39,7 @@ class Gunner(BridgeCrew):
 
     def update(self, dt: float) -> None:
         self._auto_shield()
+        self._auto_beam_intercept()
         self._process_attacks()
 
     def _auto_shield(self) -> None:
@@ -62,8 +63,50 @@ class Gunner(BridgeCrew):
         elif beam_threat:
             self.vessel.shield.set_defense_rate(SHIELD_AUTO_BEAM_RATE)
         else:
-            # 脅威なし: コマンダーの設定値に戻す（未設定 = 0%）
             self.vessel.shield.set_defense_rate(self._manual_shield_rate)
+
+    def _auto_beam_intercept(self) -> None:
+        """レーダーで探知した敵ミサイルをビームで自動迎撃する。最優先: 自艦へ向かうミサイル。"""
+        if not self.vessel.radar or not self.vessel.beam_launcher:
+            return
+        if not self.vessel.beam_launcher.ready:
+            return
+        if not self.vessel.generator:
+            return
+        if self.vessel.generator.capacitor < self.vessel.beam_launcher.required_energy:
+            return
+
+        from game.objects.missile import Missile
+        enemy_iff = "K" if self.vessel.faction == "U" else "U"
+        incoming: list[tuple[float, "Missile"]] = []   # 自艦へ向かうミサイル
+        others: list[tuple[float, "Missile"]] = []     # その他の敵ミサイル
+
+        for c in self.vessel.radar.contacts:
+            if not isinstance(c, Missile) or c.iff != enemy_iff or c.destroyed:
+                continue
+            dist = distance_grid(self.vessel.pos, c.pos)
+            if dist > self.vessel.beam_launcher.beam_range:
+                continue
+            to_us = direction_to(c.pos, self.vessel.pos)
+            dot = c.heading.x * to_us.x + c.heading.y * to_us.y
+            if dot > 0.5:
+                incoming.append((dist, c))
+            else:
+                others.append((dist, c))
+
+        target_missile = None
+        if incoming:
+            target_missile = min(incoming, key=lambda x: x[0])[1]
+        elif others:
+            target_missile = min(others, key=lambda x: x[0])[1]
+
+        if target_missile is None:
+            return
+
+        uni = self.vessel.universe
+        b = self.vessel.beam_launcher.fire(target_missile.pos, self.vessel.generator)
+        if b and uni:
+            uni.add(b)
 
     def _process_attacks(self) -> None:
         if not self._attack_queue:
@@ -72,7 +115,6 @@ class Gunner(BridgeCrew):
         if target.destroyed:
             self._attack_queue.pop(0)
             return
-        from game.coords import distance_grid
         dist = distance_grid(self.vessel.pos, target.pos)
         uni = self.vessel.universe
         if weapon == "missile" and self.vessel.missile_launcher:

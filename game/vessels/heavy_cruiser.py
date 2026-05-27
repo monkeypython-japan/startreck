@@ -2,7 +2,7 @@
 from __future__ import annotations
 from game.coords import Vec2
 from game.objects.vessel import Vessel
-from game.constants import HEAVY_CRUISER, MISSILE_STANDARD, BEAM_STANDARD, SHIELD_STANDARD, MISSILE_RELOAD_TIME
+from game.constants import HEAVY_CRUISER, MISSILE_STANDARD, BEAM_STANDARD, SHIELD_STANDARD, MISSILE_RELOAD_TIME, BEAM_RELOAD_TIME
 
 
 class HeavyCruiser(Vessel):
@@ -27,6 +27,7 @@ class HeavyCruiser(Vessel):
             missile_flight_time=ms["flight_time"],
             missile_reload_time=MISSILE_RELOAD_TIME,
             beam_power=bs["power"], beam_speed=bs["speed"], beam_range=bs["range"],
+            beam_reload_time=BEAM_RELOAD_TIME,
         )
         self._attach_bot_crew()
 
