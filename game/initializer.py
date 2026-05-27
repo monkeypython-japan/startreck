@@ -18,7 +18,6 @@ from game.constants import (
 )
 
 SPACE_SIZE = 10.0
-MIN_BASE_SEPARATION = 3000.0  # grid  基地同士の最小距離
 STAR_GRID_N = 4             # 恒星配置用グリッド (4×4 = 16セル)
 
 
@@ -65,22 +64,39 @@ def _place_bases(
     x_sector_min: int,
     x_sector_max: int,
 ) -> list[Vec2]:
-    """指定 x セクタ範囲内に、同勢力基地と MIN_BASE_SEPARATION grid 以上離して基地を配置する。"""
-    positions: list[Vec2] = []
+    """基地間距離が最大になる配置を返す（最遠点サンプリング）。
+    全セクター中心を出発点として farthest-first greedy を実行し、
+    最小ペア間距離が最大となる構成を採用する。同スコアの構成はランダムに選ぶ。
+    """
     all_sectors = [
         Vec2(sx + 0.5, sy + 0.5)
         for sx in range(x_sector_min, x_sector_max + 1)
         for sy in range(10)
     ]
-    for _ in range(200):
-        random.shuffle(all_sectors)
-        positions = []
-        for c in all_sectors:
-            if all(distance_grid(c, p) >= MIN_BASE_SEPARATION for p in positions):
-                positions.append(c)
-                if len(positions) == n:
-                    return positions
-    return positions
+
+    best_min_dist = -1.0
+    best_configs: list[list[Vec2]] = []
+
+    for start in all_sectors:
+        positions = [start]
+        remaining = [s for s in all_sectors if s is not start]
+        for _ in range(n - 1):
+            farthest = max(remaining, key=lambda c: min(distance_grid(c, p) for p in positions))
+            positions.append(farthest)
+            remaining.remove(farthest)
+
+        min_d = min(
+            distance_grid(positions[i], positions[j])
+            for i in range(len(positions))
+            for j in range(i + 1, len(positions))
+        )
+        if min_d > best_min_dist + 1e-9:
+            best_min_dist = min_d
+            best_configs = [positions[:]]
+        elif abs(min_d - best_min_dist) <= 1e-9:
+            best_configs.append(positions[:])
+
+    return random.choice(best_configs)
 
 
 def _nearest_base(pos: Vec2, bases: list[BaseStation]) -> BaseStation:
