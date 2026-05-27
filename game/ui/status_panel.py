@@ -129,10 +129,45 @@ class StatusPanel:
         y += 5
 
         from game.objects.base_station import BaseStation
-        fed_bases = sum(1 for o in universe.objects if isinstance(o, BaseStation) and o.faction == "U")
-        kli_bases = sum(1 for o in universe.objects if isinstance(o, BaseStation) and o.faction == "K")
-        screen.blit(self.font.render(f"Fed Bases: {fed_bases}", True, (80, 140, 255)), (x, y))
+        from game.objects.vessel import Vessel
+        fed_list = [o for o in universe.objects if isinstance(o, BaseStation) and o.faction == "U"]
+        kli_list = [o for o in universe.objects if isinstance(o, BaseStation) and o.faction == "K"]
+        fed_bases = len(fed_list)
+        kli_bases = len(kli_list)
+
+        # 敵インテグレータに記録されていない味方基地数（敵に未発見）
+        enemy_vessel = next(
+            (o for o in universe.objects
+             if isinstance(o, Vessel) and o.faction == "K" and o.integrator),
+            None,
+        )
+        if enemy_vessel:
+            enemy_known = {
+                r.id for r in enemy_vessel.integrator.query(faction="U")
+                if r.obj_type == "BaseStation"
+            }
+            fed_hidden = sum(1 for b in fed_list if b.id not in enemy_known)
+        else:
+            fed_hidden = fed_bases
+
+        # 味方インテグレータに記録されていない敵基地数（自軍未発見）
+        if player.integrator:
+            player_known = {
+                r.id for r in player.integrator.query(faction="K")
+                if r.obj_type == "BaseStation"
+            }
+            kli_hidden = sum(1 for b in kli_list if b.id not in player_known)
+        else:
+            kli_hidden = kli_bases
+
+        fed_txt = f"Fed Bases: {fed_bases}"
+        if fed_hidden > 0:
+            fed_txt += f"  未発見:{fed_hidden}"
+        kli_txt = f"Kli Bases: {kli_bases}"
+        if kli_hidden > 0:
+            kli_txt += f"  未発見:{kli_hidden}"
+        screen.blit(self.font.render(fed_txt, True, (80, 140, 255)), (x, y))
         y += LINE_H
-        screen.blit(self.font.render(f"Kli Bases: {kli_bases}", True, (255, 80, 80)), (x, y))
+        screen.blit(self.font.render(kli_txt, True, (255, 80, 80)), (x, y))
 
         pygame.draw.rect(screen, PANEL_BORDER, self.rect, 1)

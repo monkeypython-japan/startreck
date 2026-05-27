@@ -2,7 +2,7 @@
 from __future__ import annotations
 from game.coords import Vec2, distance_grid, direction_to, wrap_vec
 from game.crew.commander import Commander
-from game.constants import BOT_EVADE_DAMAGE_RATE, BOT_RETREAT_DAMAGE_RATE
+from game.constants import BOT_EVADE_DAMAGE_RATE, BOT_RETREAT_DAMAGE_RATE, BOT_SUPPLY_FUEL_RATE, BOT_SUPPLY_MISSILE_RATE
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -34,8 +34,8 @@ class BotCommander(Commander):
             if self.vessel.bridge and self.vessel.bridge.gunner:
                 self.vessel.bridge.gunner.set_manual_shield_rate(0.0)
 
-        # 大破時は補給地点へ退避
-        if self.vessel.damage >= self.vessel.durability * BOT_RETREAT_DAMAGE_RATE:
+        # 補給条件（HP低下・燃料不足・ミサイル不足）を満たす場合はホームへ退避
+        if self._needs_supply():
             self._retreat()
             return
 
@@ -169,8 +169,21 @@ class BotCommander(Commander):
         if target and not target.destroyed and self.vessel.bridge and self.vessel.bridge.gunner:
             self.vessel.bridge.gunner.attack_beam(target)
 
+    def _needs_supply(self) -> bool:
+        """HP・燃料・ミサイルのいずれかが補給閾値以下なら True。"""
+        v = self.vessel
+        if v.damage >= v.durability * BOT_RETREAT_DAMAGE_RATE:
+            return True
+        if v.generator and v.generator.fuel / v.generator.fuel_max < BOT_SUPPLY_FUEL_RATE:
+            return True
+        if (v.missile_launcher and v.missile_launcher.capacity > 0
+                and v.missile_launcher.stock / v.missile_launcher.capacity < BOT_SUPPLY_MISSILE_RATE):
+            return True
+        return False
+
     def _retreat(self) -> None:
-        supply = self._nearest_supply()
+        supply = (self.home if (self.home and not self.home.destroyed)
+                  else self._nearest_supply())
         if supply is None:
             return
         from game.constants import SUPPLY_RANGE

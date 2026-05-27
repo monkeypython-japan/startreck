@@ -54,6 +54,20 @@ class BotFleetCommander(BotCommander):
         target = wrap_vec(Vec2(pos.x + dx * 2.0, pos.y + dy * 2.0))
         nav.set_destination(target, speed=self.vessel.max_speed)
 
+    def _retreat(self) -> None:
+        """補給退避時にホームを最近傍の味方基地に切り替えてから退避する。"""
+        if self.vessel.universe:
+            from game.objects.base_station import BaseStation
+            from game.coords import distance_grid
+            bases = [
+                o for o in self.vessel.universe.objects
+                if isinstance(o, BaseStation) and o.faction == self.vessel.faction
+            ]
+            if bases:
+                nearest = min(bases, key=lambda o: distance_grid(self.vessel.pos, o.pos))
+                self.set_home(nearest)
+        super()._retreat()
+
     def tick(self) -> None:
         self.update_fleet_target()
         super().tick()
