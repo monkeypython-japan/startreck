@@ -6,10 +6,10 @@ HEAVY_CRUISER = dict(
     max_speed=5,          # grid/sec
     size=0.3,             # grid
     durability=2000,      # gj
-    missile_capacity=100,
+    missile_capacity=150,
     capacitor_max=2000,   # gj
     generator_rate_max=20,  # gj/sec
-    fuel_max=15000,       # gj
+    fuel_max=22500,       # gj  (+50%)
     radar_range=1000,     # grid
     supply_provider=True,
 )
@@ -115,8 +115,10 @@ SHIELD_AUTO_BEAM_RATE = 50    # %  ビーム検知時
 SHIELD_AUTO_MISSILE_RATE = 100  # %  ミサイル検知時
 
 # --- BOT AI ---
-BOT_EVADE_DAMAGE_RATE   = 0.70  # 蓄積ダメージが耐久性の70%以上で回避行動
-BOT_RETREAT_DAMAGE_RATE = 0.80  # 蓄積ダメージが耐久性の80%以上で退避
+BOT_EVADE_DAMAGE_RATE    = 0.70  # 蓄積ダメージが耐久性の70%以上で回避行動
+BOT_RETREAT_DAMAGE_RATE  = 0.80  # 蓄積ダメージが耐久性の80%以上で補給退避
+BOT_SUPPLY_FUEL_RATE     = 0.20  # 燃料残量がこの率以下で補給退避
+BOT_SUPPLY_MISSILE_RATE  = 0.10  # ミサイル残量がこの率以下で補給退避
 BOT_HOME_ORBIT_RADIUS = 150     # grid
 
 # --- 初期配置 ---
