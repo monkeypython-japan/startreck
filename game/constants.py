@@ -119,7 +119,7 @@ BOT_HOME_ORBIT_RADIUS = 150     # grid
 # --- 初期配置 ---
 STAR_COUNT_MIN = 10
 STAR_COUNT_MAX = 15
-FLEET_COUNT = 3               # 艦隊数 (両軍共通)
+FLEET_COUNT = 5               # 艦隊数 (両軍共通)
 FLEET_SIZE = 10               # 駆逐艦数 per 艦隊 (旗艦1隻 + 駆逐艦10隻)
 BASE_COUNT = 3                # 基地数 (両軍共通)
 FLEET_ORBIT_RADIUS = 150      # grid  旗艦・基地からの初期配置半径
