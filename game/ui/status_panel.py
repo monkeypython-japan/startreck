@@ -106,10 +106,14 @@ class StatusPanel:
             _bar_text(self.font, screen, fuel_val, x + BAR_LABEL_W + 2, y)
             y += LINE_H
 
-        # ミサイル残弾
+        # ミサイル残弾 バー
         if player.missile_launcher:
-            m_val = f"Missiles: {player.missile_launcher.stock} / {player.missile_launcher.capacity}"
-            screen.blit(self.font.render(m_val, True, VALUE_COLOR), (x, y))
+            ml = player.missile_launcher
+            m_ratio = ml.stock / ml.capacity if ml.capacity > 0 else 0.0
+            screen.blit(self.font.render("MSL", True, LABEL_COLOR), (x, y))
+            _bar(screen, x + BAR_LABEL_W, y, w - BAR_LABEL_W, m_ratio, (60, 200, 80))
+            m_val = f"{ml.stock}/{ml.capacity}"
+            _bar_text(self.font, screen, m_val, x + BAR_LABEL_W + 2, y)
             y += LINE_H
 
         # ジャンプドライブ
