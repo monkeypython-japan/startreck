@@ -25,8 +25,15 @@ class Universe:
         from game.objects.base_station import BaseStation
         from game.objects.vessel import Vessel
         for o in self.objects:
-            if o.destroyed and not isinstance(o, (Missile, Beam)):
-                self.recent_explosions.append(o.pos)
+            if not o.destroyed:
+                continue
+            if isinstance(o, Missile):
+                if o.intercepted:
+                    self.recent_explosions.append({"pos": o.pos, "max_r": 5})
+            elif isinstance(o, Beam):
+                pass
+            else:
+                self.recent_explosions.append({"pos": o.pos, "max_r": 20})
                 if isinstance(o, BaseStation):
                     self.destroyed_bases.append((o.pos, o.faction))
                 elif isinstance(o, Vessel):
@@ -38,6 +45,8 @@ class Universe:
                         "fuel_provided": o.generator.total_fuel_provided if o.generator else 0.0,
                         "fuel_consumed": o.generator.fuel_consumed if o.generator else 0.0,
                         "fuel_remaining": o.generator.fuel if o.generator else 0.0,
+                        "beam_fired": o.beam_launcher.shots_fired if o.beam_launcher else 0,
+                        "beam_hits": o.beam_launcher.hits if o.beam_launcher else 0,
                     })
         self.objects = [o for o in self.objects if not o.destroyed]
 
@@ -55,12 +64,14 @@ class Universe:
     def _check_weapon_collisions(self) -> None:
         from game.objects.missile import Missile
         from game.objects.beam import Beam
+        missiles = [o for o in self.objects if isinstance(o, Missile)]
         non_weapons = [o for o in self.objects if not isinstance(o, (Missile, Beam))]
+        beam_targets = non_weapons + missiles  # ビームはミサイルも撃墜可能
         for obj in list(self.objects):
             if isinstance(obj, Missile):
                 obj.check_detonation(non_weapons)
             elif isinstance(obj, Beam):
-                obj.check_damage(non_weapons)
+                obj.check_damage(beam_targets)
 
     def _tick(self) -> None:
         from game.objects.vessel import Vessel

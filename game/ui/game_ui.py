@@ -160,7 +160,11 @@ class GameUI:
             if clicked:
                 self.galaxy_map.selected = clicked
                 self.radar_view.selected = clicked
-                if self._is_enemy(clicked):
+                from game.objects.missile import Missile as _Missile
+                if isinstance(clicked, _Missile) and clicked.iff != self.player.faction:
+                    self._cmd_beam(clicked)
+                    self.message_window.add("ミサイル迎撃ビーム発射指示")
+                elif self._is_enemy(clicked):
                     self._cmd_direct_attack(clicked)
                 else:
                     self._show_object_menu(clicked, mx, my)
@@ -359,8 +363,10 @@ class GameUI:
     def _collect_explosions(self) -> None:
         import pygame
         now_ms = pygame.time.get_ticks()
-        for pos in self.universe.recent_explosions:
-            self._explosions.append({"pos": pos, "start_ms": now_ms, "duration": 1.5, "max_r": 20})
+        for entry in self.universe.recent_explosions:
+            max_r = entry["max_r"]
+            duration = 0.6 if max_r <= 5 else 1.5
+            self._explosions.append({"pos": entry["pos"], "start_ms": now_ms, "duration": duration, "max_r": max_r})
         self.universe.recent_explosions.clear()
         self._explosions = [e for e in self._explosions
                             if (now_ms - e["start_ms"]) / 1000.0 < e["duration"]]
@@ -394,4 +400,69 @@ class GameUI:
         self.status_panel.draw(self.screen, self.universe, self.player)
         self.message_window.draw(self.screen)
         self._draw_controls()
+        self._draw_hover_tooltip()
         self.popup.draw(self.screen)
+
+    def _draw_hover_tooltip(self) -> None:
+        """全天マップ内の味方オブジェクトにホバーしたときステータスツールチップを表示する。"""
+        mx, my = pygame.mouse.get_pos()
+        if not self.galaxy_map.rect.collidepoint(mx, my):
+            return
+        from game.objects.vessel import Vessel
+        from game.objects.base_station import BaseStation
+        friendly = [
+            o for o in self.universe.objects
+            if isinstance(o, (Vessel, BaseStation)) and o.faction == self.player.faction
+        ]
+        obj = self.galaxy_map.find_object_at(mx, my, friendly)
+        if obj is None:
+            return
+
+        lines: list[tuple[str, tuple]] = []
+        WHITE = (220, 228, 242)
+        LABEL = (130, 160, 200)
+
+        # 艦種名
+        lines.append((type(obj).__name__, WHITE))
+
+        # 耐久度
+        if obj.durability > 0:
+            hp_pct = (1.0 - obj.damage / obj.durability) * 100
+            hp_color = (80, 220, 80) if hp_pct > 50 else (220, 180, 40) if hp_pct > 25 else (230, 60, 60)
+            lines.append((f"HP  {hp_pct:.0f}%", hp_color))
+
+        if isinstance(obj, Vessel):
+            # 燃料
+            if obj.generator and obj.generator.fuel_max > 0:
+                fuel_pct = obj.generator.fuel / obj.generator.fuel_max * 100
+                lines.append((f"FUEL {fuel_pct:.0f}%", LABEL))
+            # ミサイル
+            if obj.missile_launcher:
+                ml = obj.missile_launcher
+                lines.append((f"MSL  {ml.stock}/{ml.capacity}", LABEL))
+
+        # ツールチップサイズ計算
+        font = make_font(13)
+        pad = 6
+        line_h = 16
+        tw = max(font.size(t)[0] for t, _ in lines) + pad * 2
+        th = line_h * len(lines) + pad * 2
+
+        # 表示位置（画面外にはみ出さないよう調整）
+        tx = mx + 14
+        ty = my + 14
+        if tx + tw > WINDOW_W:
+            tx = mx - tw - 6
+        if ty + th > WINDOW_H:
+            ty = my - th - 6
+
+        # 背景
+        bg = pygame.Surface((tw, th), pygame.SRCALPHA)
+        bg.fill((15, 18, 32, 210))
+        self.screen.blit(bg, (tx, ty))
+        pygame.draw.rect(self.screen, (70, 90, 140), (tx, ty, tw, th), 1)
+
+        # テキスト描画
+        for i, (text, color) in enumerate(lines):
+            surf = font.render(text, True, color)
+            self.screen.blit(surf, (tx + pad, ty + pad + i * line_h))

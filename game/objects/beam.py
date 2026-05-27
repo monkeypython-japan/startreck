@@ -24,6 +24,7 @@ class Beam(Mover):
         max_range: float,
         owner: "Thing | None" = None,
         on_report: Callable[[str], None] | None = None,
+        on_hit: Callable[[], None] | None = None,
     ) -> None:
         super().__init__(origin, size=0.0, durability=1.0)
         self.origin: Vec2 = origin
@@ -35,6 +36,7 @@ class Beam(Mover):
         self.traveled: float = 0.0          # grid
         self.owner: "Thing | None" = owner
         self._on_report: Callable[[str], None] | None = on_report
+        self._on_hit: Callable[[], None] | None = on_hit
 
     def update(self, dt: float) -> None:
         if self.destroyed:
@@ -47,10 +49,11 @@ class Beam(Mover):
         super().update(dt)
 
     def check_damage(self, objects: list) -> None:
-        """先端周辺のオブジェクトにダメージを与える。"""
+        """先端周辺のオブジェクトにダメージを与える。ミサイルは即時撃墜。"""
         if self.destroyed:
             return
         from game.objects.star import Star
+        from game.objects.missile import Missile
         for obj in objects:
             if obj is self or obj is self.owner:
                 continue
@@ -60,6 +63,20 @@ class Beam(Mover):
                     self.destroyed = True
                     return
                 continue
+            # ミサイルは無条件撃墜（IFF確認: 敵ミサイルのみ）
+            if isinstance(obj, Missile):
+                if obj.iff == self.iff:
+                    continue
+                if dist <= BEAM_FULL_DAMAGE_RANGE:
+                    obj.intercepted = True
+                    obj.destroyed = True
+                    self.destroyed = True
+                    if self._on_hit:
+                        self._on_hit()
+                    if self._on_report:
+                        self._on_report("ビームでミサイル撃墜")
+                    return
+                continue
             if dist <= BEAM_FULL_DAMAGE_RANGE:
                 dmg = self.power
             elif dist <= BEAM_PARTIAL_DAMAGE_RANGE:
@@ -67,6 +84,8 @@ class Beam(Mover):
             else:
                 continue
             hull_dmg = obj.receive_damage(dmg)
+            if self._on_hit:
+                self._on_hit()
             if self.owner and hasattr(obj, 'notify_attacked_by'):
                 obj.notify_attacked_by(self.owner.id)
             self.destroyed = True

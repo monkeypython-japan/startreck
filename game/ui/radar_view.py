@@ -30,7 +30,7 @@ def _color_for(obj) -> tuple:
     if isinstance(obj, BaseStation):
         return (0, 80, 200) if obj.faction == "U" else (160, 0, 0)
     if isinstance(obj, SpecialShip):
-        return (180, 140, 0)
+        return (0, 130, 0)
     if isinstance(obj, Vessel):
         return (0, 80, 200) if obj.faction == "U" else (200, 0, 0)
     if isinstance(obj, Missile):
@@ -185,6 +185,18 @@ class RadarView:
                 surface.blit(lsurf, (rx + sx + 2, ry + sy + 1))
         surface.set_clip(old_clip)
 
+    def _is_detected_by_enemy(self) -> bool:
+        """自艦が敵のいずれかのレーダーに捕捉されているか判定する。"""
+        uni = self.player.universe
+        if not uni:
+            return False
+        from game.objects.vessel import Vessel
+        for obj in uni.objects:
+            if isinstance(obj, Vessel) and obj.faction != self.player.faction:
+                if obj.radar and self.player in obj.radar.contacts:
+                    return True
+        return False
+
     def _draw_objects(self, surface: pygame.Surface) -> None:
         from game.objects.vessel import Vessel
         from game.objects.beam import Beam
@@ -196,6 +208,8 @@ class RadarView:
         draw_list = list(contacts)
         if self.player not in draw_list:
             draw_list.append(self.player)
+
+        detected_by_enemy = self._is_detected_by_enemy()
 
         for obj in draw_list:
             sx, sy = self.world_to_screen(obj.pos)
@@ -229,6 +243,9 @@ class RadarView:
                     pygame.draw.rect(surface, HIGHLIGHT_COLOR, (sx - r - 4, sy - r - 4, (r + 4) * 2, (r + 4) * 2), 1)
                 else:
                     pygame.draw.circle(surface, HIGHLIGHT_COLOR, (sx, sy), r + 4, 1)
+            # 自艦が敵レーダーに捕捉されている場合はアイコン内部に白点
+            if obj is self.player and detected_by_enemy and not obj.destroyed:
+                pygame.draw.circle(surface, (255, 255, 255), (sx, sy), 2)
             if isinstance(obj, Vessel) and obj.speed > 0:
                 ex = int(sx + obj.heading.x * 16)
                 ey = int(sy + obj.heading.y * 16)
@@ -314,9 +331,14 @@ class RadarView:
         self._draw_destination_marker(surface)
         surface.set_clip(old_clip)
 
-        # レーダー範囲円 (破線)
-        r_px = self.rect.width // 2 - 2
-        draw_dashed_circle(surface, RADAR_RING_COLOR,
-                           (self.rect.centerx, self.rect.centery), r_px, dash=8, gap=5)
+        # レーダー範囲円 (破線) — ズーム倍率に応じてスケール
+        if self.player.radar:
+            r_px = int(self.player.radar.scan_range * GRID * self._scale)
+            if r_px > 0:
+                old_clip2 = surface.get_clip()
+                surface.set_clip(self.rect)
+                draw_dashed_circle(surface, RADAR_RING_COLOR,
+                                   (self.rect.centerx, self.rect.centery), r_px, dash=8, gap=5)
+                surface.set_clip(old_clip2)
 
         pygame.draw.rect(surface, (120, 130, 160), self.rect, 1)

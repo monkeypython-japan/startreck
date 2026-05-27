@@ -49,7 +49,7 @@ MISSILE_STANDARD = dict(
 
 BEAM_STANDARD = dict(
     power=250,        # gj
-    speed=200,        # grid/sec
+    speed=300,        # grid/sec
     range=750,        # grid
 )
 
@@ -70,7 +70,7 @@ MISSILE_SPECIAL = dict(
 
 BEAM_SPECIAL = dict(
     power=250,
-    speed=200,
+    speed=300,
     range=1500,
 )
 
@@ -88,6 +88,9 @@ BEAM_PARTIAL_DAMAGE_RATE = 0.25
 
 # --- ビーム発射コスト ---
 BEAM_ENERGY_COST_RATE = 1.10  # ビーム威力の110%
+
+# --- ビーム連射 ---
+BEAM_RELOAD_TIME = 1.0        # sec  標準艦の発射間隔。特務艦は 0.0（制限なし）
 
 # --- メッセージ ---
 REPORT_ALERT = "\x00"  # このプレフィックスを付けると赤字で表示される
