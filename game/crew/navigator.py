@@ -25,7 +25,7 @@ class Navigator(BridgeCrew):
         self._evading = False
         self._flee_evading = False
         self.destination = pos
-        self.vessel.set_heading_to(pos)
+        self.vessel.turn_to(pos)  # 進路変更エネルギーを消費
         if speed is not None:
             self.vessel.set_speed(speed)
 

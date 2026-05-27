@@ -43,6 +43,9 @@ def _run_game(screen: pygame.Surface, clock: pygame.time.Clock) -> str:
                 msg = "連邦の勝利！" if winner == "U" else "クリンゴンの勝利！"
                 print(f"ゲーム終了: {msg}  (Time: {universe.time}s)")
                 result_surf = font_large.render(msg, True, (255, 255, 100))
+                from game.game_log import write_game_log
+                log_path = write_game_log(universe, winner)
+                print(f"ゲームログ: {log_path}")
 
         ui.update(dt)
         ui.draw()
