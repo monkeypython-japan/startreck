@@ -1,5 +1,7 @@
 """BOTフリートコマンダー: 艦隊旗艦の自律AIコマンダー。傘下駆逐艦への攻撃目標割り当てを担う。"""
 from __future__ import annotations
+import math
+from game.coords import displacement, wrap_vec, Vec2
 from game.crew.bot_commander import BotCommander
 from typing import TYPE_CHECKING
 
@@ -29,6 +31,28 @@ class BotFleetCommander(BotCommander):
         for member in self._fleet:
             if not member.destroyed and member.bridge and member.bridge.commander:
                 member.bridge.commander.set_attack_target(target_base_id)
+
+    def _patrol(self) -> None:
+        """インテグレータ情報をもとにオブジェクト密度が最小の方位へ最大速度で索敵移動する。"""
+        nav = self.vessel.bridge.navigator if self.vessel.bridge else None
+        if not nav or not self.vessel.integrator:
+            return
+        N = 8
+        counts = [0] * N
+        pos = self.vessel.pos
+        for r in self.vessel.integrator.query():
+            if r.id == self.vessel.id:
+                continue
+            disp = displacement(pos, r.pos)
+            angle = math.atan2(disp.y, disp.x)  # -π〜π
+            sector = int((angle + math.pi) / (2 * math.pi) * N) % N
+            counts[sector] += 1
+        min_sector = counts.index(min(counts))
+        center_angle = (min_sector + 0.5) * (2 * math.pi / N) - math.pi
+        dx = math.cos(center_angle)
+        dy = math.sin(center_angle)
+        target = wrap_vec(Vec2(pos.x + dx * 2.0, pos.y + dy * 2.0))
+        nav.set_destination(target, speed=self.vessel.max_speed)
 
     def tick(self) -> None:
         self.update_fleet_target()
