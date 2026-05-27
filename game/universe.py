@@ -32,10 +32,10 @@ class Universe:
                 elif isinstance(o, Vessel):
                     self._destroyed_vessel_stats.append({
                         "faction": o.faction,
-                        "ml_capacity": o.missile_launcher.capacity if o.missile_launcher else 0,
+                        "ml_provided": o.missile_launcher.total_provided if o.missile_launcher else 0,
                         "ml_fired": o.missile_launcher.shots_fired if o.missile_launcher else 0,
                         "ml_stock": o.missile_launcher.stock if o.missile_launcher else 0,
-                        "fuel_max": o.generator.fuel_max if o.generator else 0.0,
+                        "fuel_provided": o.generator.total_fuel_provided if o.generator else 0.0,
                         "fuel_consumed": o.generator.fuel_consumed if o.generator else 0.0,
                         "fuel_remaining": o.generator.fuel if o.generator else 0.0,
                     })

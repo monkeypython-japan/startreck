@@ -20,8 +20,8 @@ def _collect_faction_stats(universe: "Universe", faction: str) -> dict:
     vessel_count = len(surviving)
 
     ml_initial = (
-        sum(s["ml_capacity"] for s in destroyed)
-        + sum((v.missile_launcher.capacity if v.missile_launcher else 0) for v in surviving)
+        sum(s["ml_provided"] for s in destroyed)
+        + sum((v.missile_launcher.total_provided if v.missile_launcher else 0) for v in surviving)
     )
     ml_fired = (
         sum(s["ml_fired"] for s in destroyed)
@@ -31,8 +31,8 @@ def _collect_faction_stats(universe: "Universe", faction: str) -> dict:
     ml_unused = ml_initial - ml_fired
 
     fuel_initial = (
-        sum(s["fuel_max"] for s in destroyed)
-        + sum((v.generator.fuel_max if v.generator else 0.0) for v in surviving)
+        sum(s["fuel_provided"] for s in destroyed)
+        + sum((v.generator.total_fuel_provided if v.generator else 0.0) for v in surviving)
     )
     fuel_consumed = (
         sum(s["fuel_consumed"] for s in destroyed)
@@ -89,15 +89,15 @@ def write_game_log(universe: "Universe", winner: str | None, log_dir: str = ".")
         "",
         "## ミサイル統計",
         "",
-        "| 勢力 | 初期総数 | 使用数 | 未使用数 | 残存数 |",
-        "|------|---------|--------|---------|--------|",
+        "| 勢力 | 累計供給数 | 使用数 | 未使用数 | 残存数 |",
+        "|------|----------|--------|---------|--------|",
         f"| 連邦 | {u['ml_initial']} | {u['ml_fired']} | {u['ml_unused']} | {u['ml_remaining']} |",
         f"| クリンゴン | {k['ml_initial']} | {k['ml_fired']} | {k['ml_unused']} | {k['ml_remaining']} |",
         "",
         "## 燃料統計",
         "",
-        "| 勢力 | 初期総量 (gj) | 使用量 (gj) | 未使用量 (gj) | 残存量 (gj) |",
-        "|------|-------------|-----------|-------------|------------|",
+        "| 勢力 | 累計供給量 (gj) | 使用量 (gj) | 未使用量 (gj) | 残存量 (gj) |",
+        "|------|--------------|-----------|-------------|------------|",
         (f"| 連邦 | {u['fuel_initial']:.0f} | {u['fuel_consumed']:.0f} |"
          f" {u['fuel_unused']:.0f} | {u['fuel_remaining']:.0f} |"),
         (f"| クリンゴン | {k['fuel_initial']:.0f} | {k['fuel_consumed']:.0f} |"
