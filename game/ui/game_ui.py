@@ -160,7 +160,10 @@ class GameUI:
             if clicked:
                 self.galaxy_map.selected = clicked
                 self.radar_view.selected = clicked
-                self._show_object_menu(clicked, mx, my)
+                if self._is_enemy(clicked):
+                    self._cmd_direct_attack(clicked)
+                else:
+                    self._show_object_menu(clicked, mx, my)
             else:
                 world_pos = self.radar_view.screen_to_world(mx, my)
                 self._show_move_speed_menu(world_pos, mx, my)
@@ -279,6 +282,27 @@ class GameUI:
         if nav:
             nav.stop()
             self.message_window.add("停止命令")
+
+    def _is_enemy(self, obj: "Thing") -> bool:
+        from game.objects.vessel import Vessel
+        from game.objects.base_station import BaseStation
+        if isinstance(obj, (Vessel, BaseStation)):
+            return obj.faction != self.player.faction
+        return False
+
+    def _cmd_direct_attack(self, target: "Thing") -> None:
+        """ミサイル射程内ならミサイル、射程外ならビームを即時発射する。"""
+        from game.coords import distance_grid
+        ml = self.player.missile_launcher
+        in_missile_range = (
+            ml is not None
+            and ml.stock > 0
+            and distance_grid(self.player.pos, target.pos) <= ml.missile_range
+        )
+        if in_missile_range:
+            self._cmd_missile(target)
+        else:
+            self._cmd_beam(target)
 
     def _cmd_missile(self, target: "Thing") -> None:
         gun = self.player.bridge and self.player.bridge.gunner
