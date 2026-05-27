@@ -33,6 +33,7 @@ class MissileLauncher(Equipment):
         self._on_report: Callable[[str], None] | None = on_report
         self._active: list["Missile"] = []  # 発射済みミサイルのリスト
         self.shots_fired: int = 0            # 累計発射数（ログ用）
+        self.total_provided: int = capacity  # 累計供給数=初期+補給分（ログ用）
 
     def update(self, dt: float) -> None:
         if self._reload_remaining > 0.0:
@@ -78,4 +79,6 @@ class MissileLauncher(Equipment):
         return self.missile_speed * self.missile_flight_time
 
     def restock(self) -> None:
+        added = self.capacity - self.stock
+        self.total_provided += added
         self.stock = self.capacity

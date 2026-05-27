@@ -23,6 +23,7 @@ class Generator(Equipment):
         self.fuel_max: float = fuel_max              # gj
         self.fuel: float = fuel_max                  # 現在燃料量 (gj)
         self.fuel_consumed: float = 0.0              # 累計燃料消費量（ログ用）
+        self.total_fuel_provided: float = fuel_max   # 累計供給量=初期+補給分（ログ用）
 
     def update(self, dt: float) -> None:
         """燃料を消費してキャパシタを充填する。燃料1gj→エネルギー1gj。"""
@@ -50,6 +51,8 @@ class Generator(Equipment):
         self.rate = max(0.0, min(rate, self.rate_max))
 
     def refuel(self) -> None:
+        added = self.fuel_max - self.fuel
+        self.total_fuel_provided += added
         self.fuel = self.fuel_max
 
     def recharge(self) -> None:
