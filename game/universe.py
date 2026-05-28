@@ -12,6 +12,8 @@ class Universe:
         self.recent_explosions: list = []  # UIが毎フレーム読み取り後にクリアする
         self.destroyed_bases: list[tuple] = []  # (pos, faction) 破壊済み基地の永続記録
         self._destroyed_vessel_stats: list[dict] = []  # ログ用: 破壊済み艦艇の統計スナップショット
+        self._destroyed_base_events: list[dict] = []   # ログ用: 破壊済み基地イベント（時刻付き）
+        self.initial_base_positions: list[dict] = []   # ログ用: ゲーム開始時の基地初期配置
 
     def add(self, obj: Thing) -> None:
         self.objects.append(obj)
@@ -36,9 +38,16 @@ class Universe:
                 self.recent_explosions.append({"pos": o.pos, "max_r": 20})
                 if isinstance(o, BaseStation):
                     self.destroyed_bases.append((o.pos, o.faction))
+                    self._destroyed_base_events.append({
+                        "pos": o.pos,
+                        "faction": o.faction,
+                        "time": self.time,
+                    })
                 elif isinstance(o, Vessel):
                     self._destroyed_vessel_stats.append({
                         "faction": o.faction,
+                        "vessel_type": type(o).__name__,
+                        "destroyed_at": self.time,
                         "ml_provided": o.missile_launcher.total_provided if o.missile_launcher else 0,
                         "ml_fired": o.missile_launcher.shots_fired if o.missile_launcher else 0,
                         "ml_stock": o.missile_launcher.stock if o.missile_launcher else 0,
