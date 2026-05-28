@@ -396,7 +396,7 @@ class GalaxyMap:
                     self.rect.top - 20 <= sy <= self.rect.bottom + 20):
                 continue
             color = _color_for(obj)
-            if stale and getattr(obj, "faction", "") != self.player.faction and not isinstance(obj, BS):
+            if stale and getattr(obj, "faction", "") != self.player.faction and not isinstance(obj, (BS, StarObj)):
                 color = _dim_color(color)
             r = _radius_for(obj)
 
