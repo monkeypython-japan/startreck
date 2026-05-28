@@ -247,15 +247,17 @@ class GalaxyMap:
             draw_dashed_circle(surface, RADAR_RING_COLOR, (cx, cy), r_px, dash=8, gap=5)
 
     def _active_contact_ids(self, universe: "Universe") -> set:
-        """自艦・僚艦のレーダーに現在捕捉されているオブジェクトの ID セットを返す。"""
+        """自艦・僚艦・味方基地のレーダーに現在捕捉されているオブジェクトの ID セットを返す。"""
         ids: set = set()
         if self.player.radar:
             for c in self.player.radar.contacts:
                 ids.add(c.id)
         from game.objects.vessel import Vessel
+        from game.objects.base_station import BaseStation
         for obj in universe.objects:
-            if (isinstance(obj, Vessel) and obj.faction == self.player.faction
-                    and obj is not self.player and obj.radar):
+            if getattr(obj, "faction", "") != self.player.faction or not getattr(obj, "radar", None):
+                continue
+            if (isinstance(obj, Vessel) and obj is not self.player) or isinstance(obj, BaseStation):
                 for c in obj.radar.contacts:
                     ids.add(c.id)
         return ids
@@ -315,7 +317,7 @@ class GalaxyMap:
         draw_list = []
         for obj in universe.objects:
             obj_faction = getattr(obj, "faction", "")
-            if obj_faction == player_faction or obj.id in integrator_ids:
+            if obj_faction == player_faction or obj.id in integrator_ids or obj.id in active_ids:
                 draw_list.append(obj)
         # 自艦が破壊されて universe から削除されていても常に描画する
         if self.player not in draw_list:
