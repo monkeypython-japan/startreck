@@ -115,6 +115,7 @@ SHIELD_AUTO_BEAM_RATE = 50    # %  ビーム検知時
 SHIELD_AUTO_MISSILE_RATE = 100  # %  ミサイル検知時
 SHIELD_AUTO_THREAT_RANGE = 300  # grid  シールド自動展開の脅威検知距離
 SHIELD_CAPACITOR_RESERVE_RATE = 0.10  # キャパシタ容量のこの割合を常に確保する
+GUNNER_INTERCEPT_RANGE = 500  # grid  ビーム迎撃を試みる敵ミサイルの最大距離
 
 # --- BOT AI ---
 BOT_EVADE_DAMAGE_RATE    = 0.70  # 蓄積ダメージが耐久性の70%以上で回避行動
