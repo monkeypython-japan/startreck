@@ -302,6 +302,15 @@ class GalaxyMap:
             set(self.player.integrator.star_map.keys())
             if self.player.integrator else set()
         )
+        # レーダー圏外の敵: 最終既知位置・進路をインテグレータから取得
+        # active_ids にない敵は現在地ではなく記録済みの最後の既知位置を表示する
+        stale_records = {}
+        if self.player.integrator:
+            for oid in integrator_ids - active_ids:
+                rec = self.player.integrator.get(oid)
+                if rec:
+                    stale_records[oid] = rec
+
         player_faction = self.player.faction
         draw_list = []
         for obj in universe.objects:
@@ -312,8 +321,16 @@ class GalaxyMap:
         if self.player not in draw_list:
             draw_list.append(self.player)
 
+        from game.objects.star import Star as StarObj
+        from game.objects.base_station import BaseStation as BS
+
         for obj in draw_list:
-            sx, sy = self.world_to_screen(obj.pos)
+            # レーダー圏外の敵はインテグレータの最終既知位置・進路を使う
+            stale = stale_records.get(obj.id)
+            display_pos = stale.pos if stale else obj.pos
+            display_heading = stale.heading if stale else getattr(obj, "heading", None)
+
+            sx, sy = self.world_to_screen(display_pos)
             if not (self.rect.left - 20 <= sx <= self.rect.right + 20 and
                     self.rect.top - 20 <= sy <= self.rect.bottom + 20):
                 continue
@@ -327,8 +344,6 @@ class GalaxyMap:
                 pygame.draw.line(surface, (255, 60, 60), (sx + d, sy - d), (sx - d, sy + d), 3)
                 continue
 
-            from game.objects.star import Star as StarObj
-            from game.objects.base_station import BaseStation as BS
             if isinstance(obj, StarObj):
                 draw_asterisk(surface, color, sx, sy, r)
             elif isinstance(obj, BS):
@@ -346,29 +361,29 @@ class GalaxyMap:
                 else:
                     pygame.draw.circle(surface, HIGHLIGHT_COLOR, (sx, sy), r + 4, 1)
             # アクティブレーダー捕捉中の印 (白点) — 敵オブジェクトのみ
-            from game.objects.star import Star as _Star
-            from game.objects.base_station import BaseStation as _BS
             _is_enemy = (
                 obj.id in active_ids
-                and not isinstance(obj, _Star)
-                and not (isinstance(obj, (Vessel, _BS)) and obj.faction == self.player.faction)
+                and not isinstance(obj, StarObj)
+                and not (isinstance(obj, (Vessel, BS)) and obj.faction == self.player.faction)
             )
             if _is_enemy:
                 pygame.draw.circle(surface, (255, 255, 255), (sx, sy), 2)
             # 敵インテグレータに記録済みの味方基地 (白点)
-            if isinstance(obj, _BS) and obj.faction == self.player.faction and obj.id in enemy_detected_base_ids:
+            if isinstance(obj, BS) and obj.faction == self.player.faction and obj.id in enemy_detected_base_ids:
                 pygame.draw.circle(surface, (255, 255, 255), (sx, sy), 2)
             # 敵レーダーに現在捕捉されている味方艦艇 (白点)
             if isinstance(obj, Vessel) and obj.faction == self.player.faction and obj.id in enemy_radar_vessel_ids:
                 pygame.draw.circle(surface, (255, 255, 255), (sx, sy), 2)
-            if isinstance(obj, Vessel) and obj.speed > 0:
-                ex = int(sx + obj.heading.x * 16)
-                ey = int(sy + obj.heading.y * 16)
-                pygame.draw.line(surface, color, (sx, sy), (ex, ey), 2)
+            # 進路インジケータ: 現在探知中は現在進路、圏外は最終既知進路
+            if isinstance(obj, Vessel) and display_heading:
+                if stale or obj.speed > 0:
+                    ex = int(sx + display_heading.x * 16)
+                    ey = int(sy + display_heading.y * 16)
+                    pygame.draw.line(surface, color, (sx, sy), (ex, ey), 2)
             if isinstance(obj, Beam):
                 # origin を tip 相対でラッピングして描画（境界跨ぎで逆方向になるのを防ぐ）
-                ddx = obj.origin.x - obj.pos.x
-                ddy = obj.origin.y - obj.pos.y
+                ddx = obj.origin.x - display_pos.x
+                ddy = obj.origin.y - display_pos.y
                 if ddx > 5.0: ddx -= 10.0
                 elif ddx < -5.0: ddx += 10.0
                 if ddy > 5.0: ddy -= 10.0
