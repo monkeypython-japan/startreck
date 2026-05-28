@@ -118,15 +118,31 @@ def test_shield_no_recovery_without_energy():
 
 def test_shield_deploy_cost():
     owner = make_owner()
-    gen = Generator(owner, capacitor_max=10000.0, rate_max=100.0, fuel_max=100000.0)
-    gen.capacitor = 100.0
+    # capacitor_max=1000, reserve=100gj, capacitor=200 → available=100gj
+    gen = Generator(owner, capacitor_max=1000.0, rate_max=100.0, fuel_max=100000.0)
+    gen.capacitor = 200.0
     shield = Shield(owner, max_defense_energy=500.0, recovery_rate=1.0,
                     recovery_energy_cost=5.0, deploy_energy_cost=2.0)
     shield.set_defense_rate(50.0)
     shield.current_rate = 50.0
     shield.update(1.0, gen)
-    # 展開コスト: 50% * 2 gj/%/sec * 1sec = 100 gj
-    assert gen.capacitor == pytest.approx(0.0)
+    # 展開コスト: 50% * 2 gj/%/sec * 1sec = 100 gj、available=100gj なので全額消費
+    # キャパシタは reserve(100gj) まで下がる
+    assert gen.capacitor == pytest.approx(100.0)
+
+
+def test_shield_deploy_cost_respects_reserve():
+    owner = make_owner()
+    # capacitor がすでに reserve 以下の場合はシールドにエネルギーを供給しない
+    gen = Generator(owner, capacitor_max=1000.0, rate_max=100.0, fuel_max=100000.0)
+    gen.capacitor = 80.0  # reserve(100gj) 未満
+    shield = Shield(owner, max_defense_energy=500.0, recovery_rate=1.0,
+                    recovery_energy_cost=5.0, deploy_energy_cost=2.0)
+    shield.set_defense_rate(50.0)
+    shield.current_rate = 50.0
+    shield.update(1.0, gen)
+    # available=0 なのでキャパシタは変化しない
+    assert gen.capacitor == pytest.approx(80.0)
 
 
 # --- Integrator ---
