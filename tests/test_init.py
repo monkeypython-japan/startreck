@@ -128,30 +128,13 @@ def test_victory_none_before_initialize():
 
 
 def test_base_separation():
-    """連邦-クリンゴン間の最小距離が 5000 grid 以上であることを確認（クロス陣営距離優先）。
-    同陣営内の距離は制約なし（近くなることを許容）。"""
+    """全基地ペアの最小距離が 3606 grid 以上であることを確認（均等配置の最適解）。
+    陣営をランダムに割り当てるため、同陣営・異陣営を区別せず全ペアを検証する。"""
     from game.coords import distance_grid
     from game.objects.base_station import BaseStation as BS
     uni, _ = build_universe()
-    fed_bases = [o for o in uni.objects if isinstance(o, BS) and o.faction == "U"]
-    kli_bases = [o for o in uni.objects if isinstance(o, BS) and o.faction == "K"]
-    for f in fed_bases:
-        for k in kli_bases:
-            d = distance_grid(f.pos, k.pos)
-            assert d >= 5000.0, f"連邦-クリンゴン基地の間隔不足: {d:.0f} grid"
-
-
-def test_federation_bases_in_left_half():
-    """連邦基地が x セクタ 0〜4 (x < 5.0) に配置されることを確認。"""
-    uni, _ = build_universe()
-    bases = [o for o in uni.objects if isinstance(o, BaseStation) and o.faction == "U"]
-    for b in bases:
-        assert b.pos.x < 5.0, f"連邦基地が右半分に配置された: x={b.pos.x}"
-
-
-def test_klingon_bases_in_right_half():
-    """クリンゴン基地が x セクタ 5〜9 (x >= 5.0) に配置されることを確認。"""
-    uni, _ = build_universe()
-    bases = [o for o in uni.objects if isinstance(o, BaseStation) and o.faction == "K"]
-    for b in bases:
-        assert b.pos.x >= 5.0, f"クリンゴン基地が左半分に配置された: x={b.pos.x}"
+    all_bases = [o for o in uni.objects if isinstance(o, BS)]
+    for i, a in enumerate(all_bases):
+        for b in all_bases[i + 1:]:
+            d = distance_grid(a.pos, b.pos)
+            assert d >= 3600.0, f"基地間隔不足: {d:.0f} grid ({a.faction} vs {b.faction})"
