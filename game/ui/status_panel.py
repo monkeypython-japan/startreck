@@ -44,14 +44,11 @@ class StatusPanel:
     def draw(self, screen: pygame.Surface, universe: "Universe", player: "SpecialShip") -> None:
         pygame.draw.rect(screen, PANEL_BG, self.rect)
         HDR_H = 22
-        draw_lcars_header(screen, self.rect, "VESSEL STATUS", LCARS_CYAN, self.font,
+        draw_lcars_header(screen, self.rect, "USS YUKIKAZE", LCARS_CYAN, self.font,
                           code="0228", height=HDR_H)
         x = self.rect.left + PADDING
         w = self.rect.width - PADDING * 2
         y = self.rect.top + HDR_H + PADDING
-
-        screen.blit(self.font.render("U.S.S. YUKIKAZE", True, TITLE_COLOR), (x, y))
-        y += LINE_H
 
         info = f"Time:{universe.time:>5}s   Objects:{len(universe.objects)}"
         screen.blit(self.font.render(info, True, LABEL_COLOR), (x, y))
