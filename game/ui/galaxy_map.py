@@ -331,6 +331,9 @@ class GalaxyMap:
         from game.objects.star import Star as StarObj
         from game.objects.base_station import BaseStation as BS
 
+        # stale(暗色)オブジェクトを先に描画し、liveオブジェクトが常に前面に来るようにする
+        draw_list.sort(key=lambda o: o.id in stale_records)
+
         for obj in draw_list:
             # レーダー圏外の敵はインテグレータの最終既知位置・進路を使う
             stale = stale_records.get(obj.id)
