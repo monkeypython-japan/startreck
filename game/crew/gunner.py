@@ -52,12 +52,12 @@ class Gunner(BridgeCrew):
         missile_threat = False
         beam_threat = False
         for c in self.vessel.radar.contacts:
-            if isinstance(c, Beam) and c.iff == enemy_iff:
+            to_us = direction_to(c.pos, self.vessel.pos)
+            aimed = c.heading.x * to_us.x + c.heading.y * to_us.y > 0.5
+            if isinstance(c, Beam) and c.iff == enemy_iff and aimed:
                 beam_threat = True
-            elif isinstance(c, Missile) and c.iff == enemy_iff:
-                to_us = direction_to(c.pos, self.vessel.pos)
-                if c.heading.x * to_us.x + c.heading.y * to_us.y > 0.5:
-                    missile_threat = True
+            elif isinstance(c, Missile) and c.iff == enemy_iff and aimed:
+                missile_threat = True
         if missile_threat:
             self.vessel.shield.set_defense_rate(SHIELD_AUTO_MISSILE_RATE)
         elif beam_threat:
