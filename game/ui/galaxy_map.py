@@ -18,6 +18,11 @@ MISSILE_RANGE_COLOR = (255, 60, 60, 35)
 BEAM_RANGE_COLOR = (60, 130, 255, 28)
 
 
+def _dim_color(color: tuple, factor: float = 0.35) -> tuple:
+    """RGB カラーを指定係数で暗くする（stale コンタクト用）。"""
+    return (int(color[0] * factor), int(color[1] * factor), int(color[2] * factor))
+
+
 def _color_for(obj) -> tuple:
     from game.objects.star import Star
     from game.objects.base_station import BaseStation
@@ -337,6 +342,8 @@ class GalaxyMap:
                     self.rect.top - 20 <= sy <= self.rect.bottom + 20):
                 continue
             color = _color_for(obj)
+            if stale and getattr(obj, "faction", "") != self.player.faction and not isinstance(obj, BS):
+                color = _dim_color(color)
             r = _radius_for(obj)
 
             # 自艦撃沈時はバツ印で表示

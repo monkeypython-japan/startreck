@@ -2,7 +2,7 @@
 from __future__ import annotations
 from game.coords import direction_to, distance_grid
 from game.crew.bridge_crew import BridgeCrew
-from game.constants import SHIELD_AUTO_BEAM_RATE, SHIELD_AUTO_MISSILE_RATE, SHIELD_AUTO_THREAT_RANGE
+from game.constants import SHIELD_AUTO_BEAM_RATE, SHIELD_AUTO_MISSILE_RATE, SHIELD_AUTO_THREAT_RANGE, GUNNER_INTERCEPT_RANGE
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -91,7 +91,7 @@ class Gunner(BridgeCrew):
             if not isinstance(c, Missile) or c.iff != enemy_iff or c.destroyed:
                 continue
             dist = distance_grid(self.vessel.pos, c.pos)
-            if dist > self.vessel.beam_launcher.beam_range:
+            if dist > self.vessel.beam_launcher.beam_range or dist > GUNNER_INTERCEPT_RANGE:
                 continue
             to_us = direction_to(c.pos, self.vessel.pos)
             dot = c.heading.x * to_us.x + c.heading.y * to_us.y
