@@ -2,7 +2,7 @@
 from __future__ import annotations
 from game.coords import direction_to, distance_grid
 from game.crew.bridge_crew import BridgeCrew
-from game.constants import SHIELD_AUTO_BEAM_RATE, SHIELD_AUTO_MISSILE_RATE
+from game.constants import SHIELD_AUTO_BEAM_RATE, SHIELD_AUTO_MISSILE_RATE, SHIELD_AUTO_THREAT_RANGE
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -53,6 +53,8 @@ class Gunner(BridgeCrew):
         beam_threat = False
         for c in self.vessel.radar.contacts:
             if not (isinstance(c, (Beam, Missile)) and c.iff == enemy_iff):
+                continue
+            if distance_grid(self.vessel.pos, c.pos) > SHIELD_AUTO_THREAT_RANGE:
                 continue
             to_us = direction_to(c.pos, self.vessel.pos)
             aimed = c.heading.x * to_us.x + c.heading.y * to_us.y > 0.5
