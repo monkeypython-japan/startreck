@@ -176,6 +176,8 @@ def _place_guard_fleet(
 
 def initialize(universe: Universe) -> SpecialShip:
     """宇宙を初期化してプレーヤーの特務艦を返す。"""
+    from game import names
+    names.reset_counters()
 
     # 恒星 (10〜15個、均等分布)
     star_count = random.randint(STAR_COUNT_MIN, STAR_COUNT_MAX)

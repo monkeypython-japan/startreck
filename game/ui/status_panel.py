@@ -1,6 +1,7 @@
 """ステータスパネル: プレーヤー艦の状態をバー付きで表示する。"""
 from __future__ import annotations
 import pygame
+from game.ui.draw_utils import LCARS_CYAN, draw_lcars_header
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -42,12 +43,12 @@ class StatusPanel:
 
     def draw(self, screen: pygame.Surface, universe: "Universe", player: "SpecialShip") -> None:
         pygame.draw.rect(screen, PANEL_BG, self.rect)
+        HDR_H = 22
+        draw_lcars_header(screen, self.rect, "USS YUKIKAZE", LCARS_CYAN, self.font,
+                          code="0228", height=HDR_H)
         x = self.rect.left + PADDING
         w = self.rect.width - PADDING * 2
-        y = self.rect.top + PADDING
-
-        screen.blit(self.font.render("U.S.S. YUKIKAZE", True, TITLE_COLOR), (x, y))
-        y += LINE_H
+        y = self.rect.top + HDR_H + PADDING
 
         info = f"Time:{universe.time:>5}s   Objects:{len(universe.objects)}"
         screen.blit(self.font.render(info, True, LABEL_COLOR), (x, y))
@@ -169,4 +170,4 @@ class StatusPanel:
         y += LINE_H
         screen.blit(self.font.render(kli_txt, True, (255, 80, 80)), (x, y))
 
-        pygame.draw.rect(screen, PANEL_BORDER, self.rect, 1)
+        pygame.draw.rect(screen, LCARS_CYAN, self.rect, 1)

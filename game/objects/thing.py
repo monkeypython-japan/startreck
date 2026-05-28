@@ -12,6 +12,7 @@ class Thing:
         durability: float,
     ) -> None:
         self.id: str = str(uuid.uuid4())
+        self.name: str = ""
         self.pos: Vec2 = pos
         self.size: float = size          # grid
         self.durability: float = durability  # gj
