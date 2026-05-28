@@ -1,6 +1,7 @@
 """シールド: ダメージを防御しエネルギーを消費しながら回復する。"""
 from __future__ import annotations
 from game.equipment.equipment import Equipment
+from game.constants import SHIELD_CAPACITOR_RESERVE_RATE
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -48,13 +49,18 @@ class Shield(Equipment):
         if self.current_rate <= 0.0 and self.set_rate <= 0.0:
             return
 
-        # 展開中は現在防御率に応じてエネルギーを消費
-        deploy_cost = self.current_rate * self.deploy_energy_cost * dt
-        generator.consume_energy(deploy_cost)
+        # キャパシタ容量の10%を常に確保し、その超過分のみシールドに使う
+        reserve = generator.capacitor_max * SHIELD_CAPACITOR_RESERVE_RATE
+        available = max(0.0, generator.capacitor - reserve)
 
-        # 設定防御率に達していなければ回復
+        # 展開中は現在防御率に応じてエネルギーを消費（reserve超過分のみ）
+        deploy_cost = min(self.current_rate * self.deploy_energy_cost * dt, available)
+        generator.consume_energy(deploy_cost)
+        available -= deploy_cost
+
+        # 設定防御率に達していなければ回復（reserve超過分が足りる場合のみ）
         if self.current_rate < self.set_rate:
             recover_amount = min(self.recovery_rate * dt, self.set_rate - self.current_rate)
             recover_cost = recover_amount * self.recovery_energy_cost
-            if generator.consume_energy(recover_cost):
+            if recover_cost <= available and generator.consume_energy(recover_cost):
                 self.current_rate += recover_amount
