@@ -56,7 +56,7 @@ BEAM_STANDARD = dict(
 SHIELD_STANDARD = dict(
     max_defense_energy=250,    # gj
     recovery_rate=0.5,         # %/sec
-    recovery_energy_cost=1.25,  # gj/%
+    recovery_energy_cost=0.25,  # gj/%
     deploy_energy_cost=0.25,   # gj/%/sec
 )
 
@@ -77,7 +77,7 @@ BEAM_SPECIAL = dict(
 SHIELD_SPECIAL = dict(
     max_defense_energy=375,
     recovery_rate=1.0,
-    recovery_energy_cost=1.25,
+    recovery_energy_cost=0.25,
     deploy_energy_cost=1.0,
 )
 
