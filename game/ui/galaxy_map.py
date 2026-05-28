@@ -255,7 +255,7 @@ class GalaxyMap:
         from game.objects.vessel import Vessel
         from game.objects.base_station import BaseStation
         for obj in universe.objects:
-            if obj.faction != self.player.faction or not obj.radar:
+            if getattr(obj, "faction", "") != self.player.faction or not getattr(obj, "radar", None):
                 continue
             if (isinstance(obj, Vessel) and obj is not self.player) or isinstance(obj, BaseStation):
                 for c in obj.radar.contacts:
