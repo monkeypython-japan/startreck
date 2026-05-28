@@ -128,16 +128,17 @@ def test_victory_none_before_initialize():
 
 
 def test_base_separation():
-    """同一勢力の基地が 3000 grid 以上離れて配置されることを確認。"""
+    """連邦-クリンゴン間の最小距離が 5000 grid 以上であることを確認（クロス陣営距離優先）。
+    同陣営内の距離は制約なし（近くなることを許容）。"""
     from game.coords import distance_grid
+    from game.objects.base_station import BaseStation as BS
     uni, _ = build_universe()
-    for faction in ("U", "K"):
-        bases = [o for o in uni.objects if isinstance(o, BaseStation) and o.faction == faction]
-        for i, a in enumerate(bases):
-            for b in bases[i + 1:]:
-                assert distance_grid(a.pos, b.pos) >= 3000.0, (
-                    f"{faction}基地の間隔不足: {distance_grid(a.pos, b.pos):.0f} grid"
-                )
+    fed_bases = [o for o in uni.objects if isinstance(o, BS) and o.faction == "U"]
+    kli_bases = [o for o in uni.objects if isinstance(o, BS) and o.faction == "K"]
+    for f in fed_bases:
+        for k in kli_bases:
+            d = distance_grid(f.pos, k.pos)
+            assert d >= 5000.0, f"連邦-クリンゴン基地の間隔不足: {d:.0f} grid"
 
 
 def test_federation_bases_in_left_half():

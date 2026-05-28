@@ -23,7 +23,7 @@ SPACE_SIZE = 10.0
 STAR_GRID_N = 4             # 恒星配置用グリッド (4×4 = 16セル)
 
 # 基地配置の最適解キャッシュ（初回計算後に再利用）
-_BASE_CONFIG_CACHE: dict[tuple[int, int, int], list[list[Vec2]]] = {}
+_JOINT_BASE_CACHE: dict[int, list[tuple[list[Vec2], list[Vec2]]]] = {}
 
 
 def _random_pos() -> Vec2:
@@ -64,46 +64,90 @@ def _orbit_positions(center: Vec2, radius_grid: float, count: int) -> list[Vec2]
     ]
 
 
-def _place_bases(
-    n: int,
-    x_sector_min: int,
-    x_sector_max: int,
-) -> list[Vec2]:
-    """基地間最小距離（toroidal距離）が最大になる配置をランダムに1つ返す。
-    セクター中心の全C(m,n)組み合わせを網羅し真の最適解を保証する。
-    結果はキャッシュするため同じパラメータでの2回目以降は即座に返る。
-    """
-    key = (n, x_sector_min, x_sector_max)
-    if key not in _BASE_CONFIG_CACHE:
-        sectors = [
-            Vec2(sx + 0.5, sy + 0.5)
-            for sx in range(x_sector_min, x_sector_max + 1)
-            for sy in range(10)
-        ]
-        n_combos = math.comb(len(sectors), n)
-        # 組み合わせ数が多い場合は計算開始をログに出す（目安: 10万通りで約0.5秒）
-        SLOW_THRESHOLD = 100_000
-        if n_combos >= SLOW_THRESHOLD:
-            print(f"基地配置を計算中... (C({len(sectors)},{n}) = {n_combos:,} 通りを探索)")
-        t0 = time.monotonic()
-        best_min = -1.0
-        best: list[list[Vec2]] = []
-        for combo in combinations(sectors, n):
-            min_d = min(
-                distance_grid(combo[i], combo[j])
-                for i in range(n) for j in range(i + 1, n)
-            )
-            if min_d > best_min + 1e-9:
-                best_min = min_d
-                best = [list(combo)]
-            elif abs(min_d - best_min) <= 1e-9:
-                best.append(list(combo))
-        elapsed = time.monotonic() - t0
-        if n_combos >= SLOW_THRESHOLD:
-            print(f"基地配置決定: 最小間隔 {best_min:.0f} grid, {len(best)} 種の最適配置から選択 ({elapsed:.1f}秒)")
-        _BASE_CONFIG_CACHE[key] = best
+def _place_bases_joint(n: int) -> tuple[list[Vec2], list[Vec2]]:
+    """連邦・クリンゴン基地を合同配置する。
 
-    return random.choice(_BASE_CONFIG_CACHE[key])
+    連邦は x=0-4 の 50 セクター、クリンゴンは x=5-9 の 50 セクターから選択。
+    第1優先: 連邦-クリンゴン間の最小距離（toroidal）を最大化。
+    第2優先: 同陣営内の最小距離を最大化。
+    結果はキャッシュするため2回目以降は即座に返る。
+    """
+    if n in _JOINT_BASE_CACHE:
+        return random.choice(_JOINT_BASE_CACHE[n])
+
+    fed_s = [Vec2(sx + 0.5, sy + 0.5) for sx in range(5) for sy in range(10)]
+    kli_s = [Vec2(sx + 0.5, sy + 0.5) for sx in range(5, 10) for sy in range(10)]
+    NF, NK = len(fed_s), len(kli_s)
+
+    # 距離行列を事前計算（sqrt を O(1) ルックアップに変換）
+    dk  = [[distance_grid(fed_s[i], kli_s[j]) for j in range(NK)] for i in range(NF)]
+    dff = {(i, j): distance_grid(fed_s[i], fed_s[j]) for i in range(NF) for j in range(i + 1, NF)}
+    dkk = {(i, j): distance_grid(kli_s[i], kli_s[j]) for i in range(NK) for j in range(i + 1, NK)}
+
+    n_combos = math.comb(NF, n)
+    SLOW_THRESHOLD = 100_000
+    if n_combos >= SLOW_THRESHOLD:
+        print(f"基地配置を計算中... ({n_combos:,} 通りの連邦配置を探索)")
+    t0 = time.monotonic()
+
+    best_cross = -1.0
+    best_same  = -1.0
+    best: list[tuple[tuple[int, ...], tuple[int, ...]]] = []
+
+    for fi in combinations(range(NF), n):
+        # 連邦同陣営最小距離
+        fed_same = (min(dff[fi[a], fi[b]] for a in range(n) for b in range(a + 1, n))
+                    if n > 1 else float("inf"))
+
+        # 各クリンゴンセクターのリーチ（最寄りの連邦基地までの距離）
+        reach = [min(dk[f][k] for f in fi) for k in range(NK)]
+
+        # リーチ降順でソート → n 番目が「この連邦配置で達成可能な最大 min_cross」
+        kli_sorted = sorted(range(NK), key=lambda k: -reach[k])
+        min_cross = reach[kli_sorted[n - 1]]
+
+        if min_cross < best_cross - 1e-9:
+            continue  # プルーニング
+
+        # min_cross を達成できるクリンゴンセクター群（インデックス昇順）
+        viable = sorted(k for k in range(NK) if reach[k] >= min_cross - 1e-9)
+
+        # viable 内で同陣営最小距離を最大化するクリンゴン配置を選ぶ
+        best_local_same = -1.0
+        best_local_ki: tuple[int, ...] = ()
+        for ki in combinations(viable, n):
+            kli_same = (min(dkk[ki[a], ki[b]] for a in range(n) for b in range(a + 1, n))
+                        if n > 1 else float("inf"))
+            combined_same = min(fed_same, kli_same)
+            if combined_same > best_local_same:
+                best_local_same = combined_same
+                best_local_ki = ki
+
+        if not best_local_ki:
+            continue
+
+        if min_cross > best_cross + 1e-9:
+            best_cross = min_cross
+            best_same  = best_local_same
+            best = [(fi, best_local_ki)]
+        elif abs(min_cross - best_cross) <= 1e-9:
+            if best_local_same > best_same + 1e-9:
+                best_same = best_local_same
+                best = [(fi, best_local_ki)]
+            elif abs(best_local_same - best_same) <= 1e-9:
+                best.append((fi, best_local_ki))
+
+    elapsed = time.monotonic() - t0
+    if n_combos >= SLOW_THRESHOLD:
+        print(f"基地配置決定: クロス最小 {best_cross:.0f} grid, 同陣営最小 {best_same:.0f} grid, "
+              f"{len(best)} 種の最適配置 ({elapsed:.1f}秒)")
+
+    results = [
+        ([fed_s[i] for i in fi], [kli_s[i] for i in ki])
+        for fi, ki in best
+    ]
+    _JOINT_BASE_CACHE[n] = results
+    return random.choice(results)
 
 
 def _nearest_base(pos: Vec2, bases: list[BaseStation]) -> BaseStation:
@@ -184,8 +228,9 @@ def initialize(universe: Universe) -> SpecialShip:
     for pos in _place_stars_uniform(star_count):
         universe.add(Star(pos))
 
-    # 連邦基地 (x セクタ 0〜4)
-    fed_base_positions = _place_bases(BASE_COUNT, x_sector_min=0, x_sector_max=4)
+    # 連邦・クリンゴン基地を合同配置（クロス陣営距離優先）
+    fed_base_positions, kl_base_positions = _place_bases_joint(BASE_COUNT)
+
     fed_bases: list[BaseStation] = []
     for pos in fed_base_positions:
         base = BaseStation(pos, faction="U")
@@ -193,8 +238,6 @@ def initialize(universe: Universe) -> SpecialShip:
         fed_bases.append(base)
         universe.initial_base_positions.append({"pos": pos, "faction": "U"})
 
-    # クリンゴン基地 (x セクタ 5〜9)
-    kl_base_positions = _place_bases(BASE_COUNT, x_sector_min=5, x_sector_max=9)
     kl_bases: list[BaseStation] = []
     for pos in kl_base_positions:
         base = BaseStation(pos, faction="K")
