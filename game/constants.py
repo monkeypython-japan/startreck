@@ -57,7 +57,7 @@ SHIELD_STANDARD = dict(
     max_defense_energy=250,    # gj
     recovery_rate=0.5,         # %/sec
     recovery_energy_cost=5.0,  # gj/%
-    deploy_energy_cost=1.0,    # gj/%/sec
+    deploy_energy_cost=0.25,   # gj/%/sec
 )
 
 # --- 兵装（特務艦） ---
