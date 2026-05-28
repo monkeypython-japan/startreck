@@ -2,7 +2,11 @@
 from __future__ import annotations
 import pygame
 from game.coords import Vec2, GRID, distance
-from game.ui.draw_utils import draw_dashed_line, draw_dashed_circle, draw_star, draw_asterisk, draw_wavy_line
+from game.ui.draw_utils import (
+    draw_dashed_line, draw_dashed_circle, draw_star, draw_asterisk, draw_wavy_line,
+    LCARS_ORANGE,
+)
+from game.ui.font_util import make_font
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -21,6 +25,50 @@ BEAM_RANGE_COLOR = (60, 130, 255, 28)
 def _dim_color(color: tuple, factor: float = 0.35) -> tuple:
     """RGB カラーを指定係数で暗くする（stale コンタクト用）。"""
     return (int(color[0] * factor), int(color[1] * factor), int(color[2] * factor))
+
+
+def _name_display_level(draw_list: list) -> int:
+    """描画リストのオブジェクト密度から名前表示レベルを返す。
+    0=表示なし, 1=基地のみ, 2=+重巡, 3=+駆逐, 4=+護衛駆逐艦
+    """
+    from game.objects.missile import Missile
+    from game.objects.beam import Beam
+    count = sum(1 for o in draw_list if not isinstance(o, (Missile, Beam)))
+    if count >= 40:
+        return 0
+    if count >= 20:
+        return 1
+    if count >= 10:
+        return 2
+    if count >= 5:
+        return 3
+    return 4
+
+
+def _should_show_name(obj, level: int, is_player: bool, is_kli_base_known: bool) -> bool:
+    """オブジェクトの名前を表示すべきかどうかを返す。"""
+    if not getattr(obj, 'name', ''):
+        return False
+    from game.objects.base_station import BaseStation
+    from game.vessels.special_ship import SpecialShip
+    from game.vessels.heavy_cruiser import HeavyCruiser
+    from game.vessels.guard_destroyer import GuardDestroyer
+    from game.objects.vessel import Vessel
+    if is_player:
+        return True
+    if isinstance(obj, SpecialShip):
+        return True
+    if isinstance(obj, BaseStation):
+        if obj.faction != "U" and not is_kli_base_known:
+            return False
+        return level >= 1
+    if isinstance(obj, HeavyCruiser):
+        return level >= 2
+    if isinstance(obj, GuardDestroyer):
+        return level >= 4
+    if isinstance(obj, Vessel):
+        return level >= 3
+    return False
 
 
 def _color_for(obj) -> tuple:
@@ -334,6 +382,9 @@ class GalaxyMap:
         # stale(暗色)オブジェクトを先に描画し、liveオブジェクトが常に前面に来るようにする
         draw_list.sort(key=lambda o: o.id not in stale_records)
 
+        name_level = _name_display_level(draw_list)
+        name_font = make_font(10)
+
         for obj in draw_list:
             # レーダー圏外の敵はインテグレータの最終既知位置・進路を使う
             stale = stale_records.get(obj.id)
@@ -404,6 +455,15 @@ class GalaxyMap:
                 oy = int(sy + ddy * self._scale)
                 pygame.draw.line(surface, color, (ox, oy), (sx, sy), 1)
 
+            # 名前ラベル
+            is_kli_base_known = (obj.id in integrator_ids) if isinstance(obj, BS) else False
+            if _should_show_name(obj, name_level,
+                                 is_player=(obj is self.player),
+                                 is_kli_base_known=is_kli_base_known):
+                label_color = _dim_color(color, 0.7) if stale else color
+                name_surf = name_font.render(obj.name, True, label_color)
+                surface.blit(name_surf, (sx + r + 3, sy - name_surf.get_height() // 2))
+
     def draw_explosions(self, surface: pygame.Surface, explosions: list) -> None:
         """爆発エフェクトを描画する。"""
         now_ms = pygame.time.get_ticks()
@@ -463,6 +523,25 @@ class GalaxyMap:
 
     # ── メイン描画 ──────────────────────────────────────────────
 
+    def _draw_lcars_overlay(self, surface: pygame.Surface, universe: "Universe") -> None:
+        """全天マップ上部に半透明 LCARS ヘッダーバーをオーバーレイ描画する。"""
+        h = 22
+        bar = pygame.Surface((self.rect.width, h), pygame.SRCALPHA)
+        bar.fill((*LCARS_ORANGE, 200))
+        surface.blit(bar, self.rect.topleft)
+        font = make_font(11)
+        label = font.render("GALACTIC CHART", True, (0, 0, 0))
+        surface.blit(label, (self.rect.left + 12, self.rect.top + (h - label.get_height()) // 2))
+        pos = self.player.pos
+        coord_txt = font.render(
+            f"({pos.x:.2f}, {pos.y:.2f})  T:{universe.time:.0f}s", True, (0, 0, 0)
+        )
+        surface.blit(coord_txt, (self.rect.right - coord_txt.get_width() - 8,
+                                  self.rect.top + (h - coord_txt.get_height()) // 2))
+        pygame.draw.line(surface, LCARS_ORANGE,
+                         (self.rect.left, self.rect.top + h),
+                         (self.rect.right, self.rect.top + h), 1)
+
     def draw(self, surface: pygame.Surface, universe: "Universe") -> None:
         pygame.draw.rect(surface, MAP_BG, self.rect)
         self._draw_grid(surface)
@@ -476,4 +555,5 @@ class GalaxyMap:
         self._draw_destination_marker(surface)
         surface.set_clip(old_clip)
 
-        pygame.draw.rect(surface, (60, 60, 80), self.rect, 1)
+        self._draw_lcars_overlay(surface, universe)
+        pygame.draw.rect(surface, LCARS_ORANGE, self.rect, 1)

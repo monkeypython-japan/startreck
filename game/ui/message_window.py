@@ -1,14 +1,14 @@
 """メッセージウィンドウ: クルーログをスクロール表示する。"""
 from __future__ import annotations
 import pygame
+from game.ui.draw_utils import LCARS_GOLD, draw_lcars_header
 
 MSG_BG = (8, 10, 18)
-MSG_BORDER = (60, 60, 80)
 MSG_TEXT = (170, 190, 170)
 MSG_ALERT = (255, 60, 60)
-TITLE_COLOR = (100, 160, 100)
 PADDING = 5
 LINE_H = 18
+HDR_H = 22
 
 
 class MessageWindow:
@@ -23,7 +23,7 @@ class MessageWindow:
         self.messages.append((message, color or MSG_TEXT))
         if len(self.messages) > self._max:
             self.messages = self.messages[-self._max:]
-        text_h = self.rect.height - PADDING * 2 - LINE_H
+        text_h = self.rect.height - PADDING * 2 - HDR_H
         max_scroll = max(0, len(self.messages) * LINE_H - text_h)
         self._scroll = max_scroll
 
@@ -31,21 +31,20 @@ class MessageWindow:
         self.add(message, MSG_ALERT)
 
     def scroll(self, delta: int) -> None:
-        text_h = self.rect.height - PADDING * 2 - LINE_H
+        text_h = self.rect.height - PADDING * 2 - HDR_H
         max_scroll = max(0, len(self.messages) * LINE_H - text_h)
         self._scroll = max(0, min(max_scroll, self._scroll + delta))
 
     def draw(self, screen: pygame.Surface) -> None:
         pygame.draw.rect(screen, MSG_BG, self.rect)
-
-        title = self.font.render("─── クルーログ ───", True, TITLE_COLOR)
-        screen.blit(title, (self.rect.left + PADDING, self.rect.top + PADDING))
+        draw_lcars_header(screen, self.rect, "COMMUNICATIONS", LCARS_GOLD, self.font,
+                          height=HDR_H)
 
         text_rect = pygame.Rect(
             self.rect.left + PADDING,
-            self.rect.top + PADDING + LINE_H,
+            self.rect.top + HDR_H + PADDING,
             self.rect.width - PADDING * 2,
-            self.rect.height - PADDING * 2 - LINE_H,
+            self.rect.height - HDR_H - PADDING * 2,
         )
         old_clip = screen.get_clip()
         screen.set_clip(text_rect)
@@ -58,4 +57,4 @@ class MessageWindow:
             y += LINE_H
 
         screen.set_clip(old_clip)
-        pygame.draw.rect(screen, MSG_BORDER, self.rect, 1)
+        pygame.draw.rect(screen, LCARS_GOLD, self.rect, 1)

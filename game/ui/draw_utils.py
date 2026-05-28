@@ -1,7 +1,40 @@
-"""描画ユーティリティ: 破線・破線円などの共通描画ヘルパー。"""
+"""描画ユーティリティ: 破線・破線円・LCARSフレームなどの共通描画ヘルパー。"""
 from __future__ import annotations
 import math
 import pygame
+
+# ── LCARS カラーパレット ──────────────────────────────────────────
+LCARS_ORANGE = (255, 153,   0)   # 全天マップ
+LCARS_PURPLE = (153, 153, 255)   # レーダービュー
+LCARS_CYAN   = ( 51, 204, 204)   # ステータスパネル
+LCARS_GOLD   = (255, 204,  51)   # メッセージウィンドウ
+LCARS_RED    = (204,  51,  51)   # 警告・終了
+LCARS_TEXT   = (  0,   0,   0)   # ヘッダー上のテキスト (黒)
+
+
+def draw_lcars_header(
+    surface: pygame.Surface,
+    rect: pygame.Rect,
+    label: str,
+    color: tuple,
+    font: pygame.font.Font,
+    code: str = "",
+    height: int = 22,
+) -> None:
+    """LCARSスタイルのカラーヘッダーバーをパネル上部に描画する。
+    rect の上端に height px のバーを描画し、その下に細い区切り線を引く。
+    """
+    bar = pygame.Rect(rect.left, rect.top, rect.width, height)
+    pygame.draw.rect(surface, color, bar, border_radius=3)
+    txt = font.render(label.upper(), True, LCARS_TEXT)
+    surface.blit(txt, (rect.left + 8, rect.top + (height - txt.get_height()) // 2))
+    if code:
+        ctxt = font.render(code, True, LCARS_TEXT)
+        surface.blit(ctxt, (rect.right - ctxt.get_width() - 8,
+                            rect.top + (height - ctxt.get_height()) // 2))
+    pygame.draw.line(surface, color,
+                     (rect.left, rect.top + height),
+                     (rect.right, rect.top + height), 1)
 
 
 def draw_dashed_line(

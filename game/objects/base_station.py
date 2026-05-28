@@ -14,6 +14,8 @@ class BaseStation(Thing):
     def __init__(self, pos: Vec2, faction: str = "U") -> None:
         super().__init__(pos, size=BASE_SIZE, durability=BASE_DURABILITY)
         self.faction: str = faction  # "U": 連邦, "K": クリンゴン
+        from game import names
+        self.name = names.next_fed_base_name() if faction == "U" else names.next_kli_base_name()
         from game.equipment.integrator import Integrator
         from game.equipment.radar import Radar
         self.integrator: Integrator = Integrator(self)

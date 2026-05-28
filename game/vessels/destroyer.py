@@ -29,6 +29,8 @@ class Destroyer(Vessel):
             beam_power=bs["power"], beam_speed=bs["speed"], beam_range=bs["range"],
             beam_reload_time=BEAM_RELOAD_TIME,
         )
+        from game import names
+        self.name = names.next_fed_vessel_name() if faction == "U" else names.next_kli_destroyer_name()
         self._attach_bot_crew()
 
     def _attach_bot_crew(self) -> None:

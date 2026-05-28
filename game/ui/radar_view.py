@@ -197,6 +197,38 @@ class RadarView:
                     return True
         return False
 
+    @staticmethod
+    def _name_level(draw_list: list) -> int:
+        from game.objects.missile import Missile
+        from game.objects.beam import Beam
+        count = sum(1 for o in draw_list if not isinstance(o, (Missile, Beam)))
+        if count >= 40: return 0
+        if count >= 20: return 1
+        if count >= 10: return 2
+        if count >= 5:  return 3
+        return 4
+
+    @staticmethod
+    def _should_show_name(obj, level: int, is_player: bool) -> bool:
+        if not getattr(obj, 'name', ''):
+            return False
+        from game.objects.base_station import BaseStation
+        from game.vessels.special_ship import SpecialShip
+        from game.vessels.heavy_cruiser import HeavyCruiser
+        from game.vessels.guard_destroyer import GuardDestroyer
+        from game.objects.vessel import Vessel
+        if is_player or isinstance(obj, SpecialShip):
+            return True
+        if isinstance(obj, BaseStation):
+            return level >= 1
+        if isinstance(obj, HeavyCruiser):
+            return level >= 2
+        if isinstance(obj, GuardDestroyer):
+            return level >= 4
+        if isinstance(obj, Vessel):
+            return level >= 3
+        return False
+
     def _draw_objects(self, surface: pygame.Surface) -> None:
         from game.objects.vessel import Vessel
         from game.objects.beam import Beam
@@ -210,6 +242,8 @@ class RadarView:
             draw_list.append(self.player)
 
         detected_by_enemy = self._is_detected_by_enemy()
+        name_level = self._name_level(draw_list)
+        name_font = _get_sector_font()
 
         for obj in draw_list:
             sx, sy = self.world_to_screen(obj.pos)
@@ -262,6 +296,11 @@ class RadarView:
                 ox = int(sx + ddx * scale)
                 oy = int(sy + ddy * scale)
                 pygame.draw.line(surface, color, (ox, oy), (sx, sy), 1)
+
+            # 名前ラベル
+            if self._should_show_name(obj, name_level, is_player=(obj is self.player)):
+                name_surf = name_font.render(obj.name, True, color)
+                surface.blit(name_surf, (sx + r + 3, sy - name_surf.get_height() // 2))
 
     def draw_explosions(self, surface: pygame.Surface, explosions: list) -> None:
         """爆発エフェクトを描画する。"""
