@@ -1,0 +1,20 @@
+#!/usr/bin/env bash
+# Startreck 起動ランチャー。
+# どこから呼ばれても、シンボリックリンクを辿って本体の
+# プロジェクトディレクトリを特定し、そこから uv 経由でゲームを起動する。
+set -euo pipefail
+
+# このスクリプトの実体パスを解決する（シンボリックリンク対応）。
+src="${BASH_SOURCE[0]}"
+while [ -h "$src" ]; do
+  dir="$(cd -P "$(dirname "$src")" >/dev/null 2>&1 && pwd)"
+  src="$(readlink "$src")"
+  # 相対リンクならリンク元ディレクトリ基準で解決する。
+  [[ "$src" != /* ]] && src="$dir/$src"
+done
+script_dir="$(cd -P "$(dirname "$src")" >/dev/null 2>&1 && pwd)"
+# bin/ の一つ上がプロジェクトルート。
+project_dir="$(cd -P "$script_dir/.." >/dev/null 2>&1 && pwd)"
+
+cd "$project_dir"
+exec uv run python main.py "$@"
