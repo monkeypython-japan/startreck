@@ -10,3 +10,6 @@ build/
 # ゲーム実行時の生成物・OS生成ファイル
 gamelog_*.md
 .DS_Store
+
+# ローカル資料（デザイン参考画像など）
+References/
